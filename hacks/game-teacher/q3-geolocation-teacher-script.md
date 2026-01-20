@@ -77,7 +77,19 @@ By the end of Q3, the player can **add robust error handling** to `navigator.geo
 ## Optional Implementation Skeleton (for devs integrating into the game)
 This is not meant to be copy/pasted verbatim in dialogue—just a reference for what Q3 expects.
 
+Note: `showMessage(...)` and `showPosition(...)` are intentionally **app-specific helpers** (not browser built-ins).
+- `showMessage(text)` should update your UI (a status banner, dialogue box, toast, etc.)
+- `showPosition(position)` should render latitude/longitude (or whatever your game uses)
+
 ```js
+// Example helper: wire this to your UI.
+// Minimal version: writes to a <div id="geoMessage"></div> if it exists.
+function showMessage(text) {
+  const el = document.getElementById('geoMessage');
+  if (el) el.textContent = text;
+  else console.log(text);
+}
+
 function getLocation() {
   if (!navigator.geolocation) {
     showMessage('Geolocation is not supported in this browser.');

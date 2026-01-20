@@ -1,21 +1,41 @@
 HOST ?= localhost
 PORT ?= 4500
+STARTUP_TIMEOUT ?= 900
+STARTUP_STATUS_AFTER ?= 60
+STARTUP_STATUS_INTERVAL ?= 30
+FAST_STARTUP_TIMEOUT ?= 7
+JEKYLL_EXTRA_ARGS ?=
 LOG_FILE = /tmp/jekyll$(PORT).log
+WATCH_FILES_LOG = /tmp/jekyll_watch_files$(PORT).log
+WATCH_NOTEBOOKS_LOG = /tmp/jekyll_watch_notebooks$(PORT).log
 PYTHON := venv/bin/python3
+
+# Local cache/marker files to avoid repeating expensive work
+CACHE_DIR ?= .cache
+SPLIT_COURSES_MARKER = $(CACHE_DIR)/split_courses.marker
+DOCX_CONVERT_MARKER = $(CACHE_DIR)/docx_convert.marker
 
 SHELL = /bin/bash -c
 .SHELLFLAGS = -e
 
-NOTEBOOK_FILES := $(shell find _notebooks -name '*.ipynb')
+# Lazily evaluated (avoid slow `find` during Makefile parse for fast targets)
+NOTEBOOK_FILES = $(shell find _notebooks -name '*.ipynb')
 DESTINATION_DIRECTORY = _posts
-MARKDOWN_FILES := $(patsubst _notebooks/%.ipynb,$(DESTINATION_DIRECTORY)/%_IPYNB_2_.md,$(NOTEBOOK_FILES))
-default: serve-current
+MARKDOWN_FILES = $(patsubst _notebooks/%.ipynb,$(DESTINATION_DIRECTORY)/%_IPYNB_2_.md,$(NOTEBOOK_FILES))
+
+# Default: start the site fast (≤ ~10s wait), then convert on-save.
+default: serve-fast
 	@touch /tmp/.notebook_watch_marker
-	@make watch-notebooks &
-	@make watch-files &
+	@make watch-notebooks > $(WATCH_NOTEBOOKS_LOG) 2>&1 &
+	@make watch-files > $(WATCH_FILES_LOG) 2>&1 &
 	@echo "Server running in background on http://localhost:$(PORT)"
 	@echo "  View logs: tail -f $(LOG_FILE)"
+	@echo "  Watchers: tail -f $(WATCH_FILES_LOG)" 
+	@echo "           tail -f $(WATCH_NOTEBOOKS_LOG)"
 	@echo "  Stop: make stop"
+
+# Fast dev server: do not run full conversions up front
+serve-fast: stop jekyll-serve-fast
 
 # File watcher - monitors log for file changes and triggers conversion
 watch-files:
@@ -127,7 +147,7 @@ build-so-simple: use-so-simple build-current
 build-yat: use-yat build-current
 
 build-current: clean convert split-courses
-	@bundle install
+	@make bundle-install
 	@bundle exec jekyll clean
 	@bundle exec jekyll build
 
@@ -137,8 +157,17 @@ build: build-current
 
 # Multi-course file splitting
 split-courses:
-	@echo " ------ Splitting multi-course files... -------"
-	@python3 scripts/split_multi_course_files.py
+	@mkdir -p $(CACHE_DIR)
+	@if [ ! -f $(SPLIT_COURSES_MARKER) ] || \
+	   [ scripts/split_multi_course_files.py -nt $(SPLIT_COURSES_MARKER) ] || \
+	   ( [ -d _posts ] && find _posts -type f \( -name '*.md' -o -name '*.ipynb' \) -newer $(SPLIT_COURSES_MARKER) -print -quit | grep -q . ) || \
+	   ( [ -d _notebooks ] && find _notebooks -type f -name '*.ipynb' -newer $(SPLIT_COURSES_MARKER) -print -quit | grep -q . ); then \
+		echo " ------ Splitting multi-course files... -------"; \
+		python3 scripts/split_multi_course_files.py; \
+		touch $(SPLIT_COURSES_MARKER); \
+	else \
+		echo "✓ split-courses up-to-date"; \
+	fi
 
 clean-courses:
 	@echo "🧹 Cleaning course-specific files..."
@@ -148,7 +177,7 @@ clean-courses:
 convert: $(MARKDOWN_FILES) convert-docx
 $(DESTINATION_DIRECTORY)/%_IPYNB_2_.md: _notebooks/%.ipynb
 	@mkdir -p $(@D)
-	@$(PYTHON) -c "from scripts.convert_notebooks import convert_notebooks; convert_notebooks()"
+	@$(PYTHON) scripts/convert_notebooks.py "$<"
 
 # Single notebook conversion (faster for development)
 convert-single:
@@ -161,8 +190,16 @@ convert-single:
 
 # DOCX conversion
 convert-docx:
+	@mkdir -p $(CACHE_DIR)
 	@if [ -d "_docx" ] && [ "$(shell ls -A _docx 2>/dev/null)" ]; then \
-		$(PYTHON) scripts/convert_docx.py; \
+		if [ ! -f $(DOCX_CONVERT_MARKER) ] || \
+		   [ scripts/convert_docx.py -nt $(DOCX_CONVERT_MARKER) ] || \
+		   find _docx -type f -name '*.docx' -newer $(DOCX_CONVERT_MARKER) -print -quit | grep -q .; then \
+			$(PYTHON) scripts/convert_docx.py; \
+			touch $(DOCX_CONVERT_MARKER); \
+		else \
+			echo "✓ DOCX conversion up-to-date"; \
+		fi; \
 	else \
 		echo "No DOCX files found in _docx directory"; \
 	fi
@@ -233,7 +270,10 @@ stop:
 	@echo "Stopping notebook watcher..."
 	@@ps aux | grep "watch-notebooks" | grep -v grep | awk '{print $$2}' | xargs kill >/dev/null 2>&1 || true
 	@@ps aux | grep "find _notebooks" | grep -v grep | awk '{print $$2}' | xargs kill >/dev/null 2>&1 || true
-	@rm -f $(LOG_FILE) /tmp/.notebook_watch_marker /tmp/.jekyll_regenerating
+	@echo "Stopping conversion processes..."
+	@@ps aux | grep "scripts/convert_notebooks.py" | grep -v grep | awk '{print $$2}' | xargs kill >/dev/null 2>&1 || true
+	@@ps aux | grep "split_multi_course_files.py" | grep -v grep | awk '{print $$2}' | xargs kill >/dev/null 2>&1 || true
+	@rm -f $(LOG_FILE) $(WATCH_FILES_LOG) $(WATCH_NOTEBOOKS_LOG) /tmp/.notebook_watch_marker /tmp/.jekyll_regenerating
 
 reload:
 	@make stop
@@ -277,9 +317,16 @@ bundle-install:
 # Start Jekyll server (incremental for development, production is GitHub Actions)
 jekyll-serve: bundle-install
 	@touch /tmp/.notebook_watch_marker
-	@bundle exec jekyll serve -H $(HOST) -P $(PORT) --incremental > $(LOG_FILE) 2>&1 & \
+	@bundle exec jekyll serve -H $(HOST) -P $(PORT) --incremental $(JEKYLL_EXTRA_ARGS) > $(LOG_FILE) 2>&1 & \
 		echo "Server PID: $$!"
 	@make wait-for-server
+
+# Fast-start Jekyll server: wait up to FAST_STARTUP_TIMEOUT seconds, then return.
+jekyll-serve-fast: bundle-install
+	@touch /tmp/.notebook_watch_marker
+	@bundle exec jekyll serve -H $(HOST) -P $(PORT) --incremental $(JEKYLL_EXTRA_ARGS) > $(LOG_FILE) 2>&1 & \
+		echo "Server PID: $$!"
+	@make wait-for-server-fast
 
 # Common server wait logic
 wait-for-server:
@@ -290,7 +337,10 @@ wait-for-server:
 			grep "Server address:" $(LOG_FILE); \
 			break; \
 		fi; \
-		if [ $$COUNTER -eq 300 ]; then \
+		if [ $$COUNTER -eq $(STARTUP_STATUS_AFTER) ]; then \
+			echo "Still starting... (this can take a few minutes on first run)"; \
+		fi; \
+		if [ $$COUNTER -eq $(STARTUP_TIMEOUT) ]; then \
 			echo "Server timed out after $$COUNTER seconds."; \
 			echo "Review errors from $(LOG_FILE)."; \
 			cat $(LOG_FILE); \
@@ -301,11 +351,24 @@ wait-for-server:
 			cat $(LOG_FILE); \
 			exit 1; \
 		fi; \
-		if [ $$((COUNTER % 10)) -eq 0 ] && [ $$COUNTER -gt 0 ]; then \
+		if [ $$COUNTER -ge $(STARTUP_STATUS_AFTER) ] && [ $$((COUNTER % $(STARTUP_STATUS_INTERVAL))) -eq 0 ] && [ $$COUNTER -gt 0 ]; then \
 			echo "Still starting... ($$COUNTER seconds elapsed)"; \
 		fi; \
 		sleep 1; \
 	done
+
+wait-for-server-fast:
+	@until [ -f $(LOG_FILE) ]; do sleep 0.2; done
+	@for ((COUNTER = 0; COUNTER <= $(FAST_STARTUP_TIMEOUT); COUNTER++)); do \
+		if grep -q "Server address:" $(LOG_FILE); then \
+			echo "Server started in $$COUNTER seconds"; \
+			grep "Server address:" $(LOG_FILE); \
+			exit 0; \
+		fi; \
+		sleep 1; \
+	done
+	@echo "Still starting (>${FAST_STARTUP_TIMEOUT}s). It's continuing in the background.";
+	@echo "Check logs: tail -f $(LOG_FILE)";
 
 # Single DOCX file conversion (for dev mode)
 convert-docx-single:
@@ -346,7 +409,7 @@ help:
 	@echo "  make update-colors-preview - Update colors and start server"
 	@echo ""
 	@echo "Server Commands:"
-	@echo "  make              - Full conversion, serve, and watch for file changes (auto-convert on save)"
+	@echo "  make              - Fast start (≤ ~10s wait), watch for changes, converts notebooks on save"
 	@echo "  make dev          - Fast dev mode: clean start, no conversion, file watching, only convert files on save (quick)"
 	@echo "  make serve        - Convert and serve (no auto-convert watching)"
 	@echo "  make build        - Convert and build _site/ for deployment (no server)"
