@@ -445,9 +445,15 @@ comments: True
 </div>
 
 <script type="module">
-  import { robopURI, fetchOptions } from '{{ site.baseurl }}/assets/js/api/config.js';
+  import { getRobopURI, fetchOptions } from '{{ site.baseurl }}/assets/js/api/config.js?v=20260123_1';
 
+  const robopURI = await getRobopURI();
   const API_URL = `${robopURI}/api/robop`;
+
+  console.log("Using robopURI:", robopURI);
+  console.log("API_URL:", API_URL);
+
+
   // Generate stars
   const starsContainer = document.getElementById('stars');
   for (let i = 0; i < 100; i++) {
@@ -530,10 +536,12 @@ async function handleRegister(event) {
   try {
     // ✅ store the fetch result
     const response = await fetch(`${API_URL}/register`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(userData)
+      ...fetchOptions,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(userData),
     });
+
 
     // ✅ safely parse JSON even if body is empty / not JSON
     const text = await response.text();
@@ -585,13 +593,12 @@ async function handleRegister(event) {
 
   try {
     const response = await fetch(`${API_URL}/login`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        GitHubID: githubId,
-        Password: password
-      })
+      ...fetchOptions,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ GitHubID: githubId, Password: password }),
     });
+
 
     const data = await response.json();
     hideLoading();
