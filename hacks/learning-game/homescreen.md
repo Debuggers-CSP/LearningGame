@@ -447,23 +447,88 @@ permalink: /learninggame/home
             } catch(e) { feedback.textContent = "Syntax Error in code."; }
         };
 
-        function renderPseudoCode() {
-            const qTexts = [
-                "Write a procedure `Average(nums)` that returns the mean of list `nums`.",
-                "Write `CountAbove(nums, t)` to find items > t.",
-                "Write `MaxValue(nums)` for the largest item.",
-                "Write `ReplaceAll(list, t, r)` to swap items.",
-                "Write `GetEvens(nums)` for only evens."
+       function renderPseudoCode() {
+            const configs = [
+                {
+                    text: "Complete the `Average` procedure: calculate the sum then return the mean (sum divided by total count).",
+                    template: "function Average(nums) {\n  let sum = 0;\n  for (let n of nums) {\n    sum += n;\n  }\n  // Fill in the blank: Divide sum by the number of items in the list (nums.length)\n  return sum / _________;\n}"
+                },
+                {
+                    text: "Complete `CountAbove`: increment the `count` variable if the number `n` is greater than the threshold `t`.",
+                    template: "function CountAbove(nums, t) {\n  let count = 0;\n  for (let n of nums) {\n    if (n > t) {\n      // Fill in the blank: increment count by 1\n      ________ += 1;\n    }\n  }\n  return count;\n}"
+                },
+                {
+                    text: "Complete `MaxValue`: if the current number `n` is greater than `max`, update `max` to be that number.",
+                    template: "function MaxValue(nums) {\n  let max = nums[0];\n  for (let n of nums) {\n    if (n > max) {\n      // Fill in the blank below\n      max = ________;\n    }\n  }\n  return max;\n}"
+                },
+                {
+                    text: "Complete `ReplaceAll`: set the current list item `list[i]` to the replacement word `rep`.",
+                    template: "function ReplaceAll(list, target, rep) {\n  for (let i = 0; i < list.length; i++) {\n    if (list[i] === target) {\n      // Fill in the blank below\n      list[i] = ________;\n    }\n  }\n  return list;\n}"
+                },
+                {
+                    text: "Complete `GetEvens`: a number is even if the remainder when divided by 2 is 0.",
+                    template: "function GetEvens(nums) {\n  let evens = [];\n  for (let n of nums) {\n    // Check if even using modulo (%) \n    if (n % 2 === ________) {\n      evens.push(n);\n    }\n  }\n  return evens;\n}"
+                }
             ];
+
+            const currentTask = configs[currentSectorNum - 1];
+
             mContent.innerHTML = `
-                <p style="color: #e2e8f0; margin-bottom:10px;">${qTexts[currentSectorNum-1]}</p>
-                <textarea id="pcCode">function solution(nums) {\n  // write code\n}</textarea>
-                <button class="btn btn-check" onclick="checkPseudo()">Validate Logic</button>
+                <p style="color: #e2e8f0; margin-bottom:10px; font-size: 14px;">${currentTask.text}</p>
+                <textarea id="pcCode" spellcheck="false" style="height: 180px; width: 100%; font-family: monospace; padding: 10px; background: #020617; color: #06b6d4; border: 1px solid #06b6d4; border-radius: 8px;">${currentTask.template}</textarea>
+                <button class="btn btn-check" onclick="checkPseudo()" style="background: #fbbf24; color: black; margin-top: 10px; width: 100%; font-weight: 900; padding: 10px; border-radius: 8px; border: none; cursor: pointer;">Validate Logic</button>
+                <div id="pcOutput" style="margin-top: 10px; padding: 10px; background: #020617; border: 1px solid #334155; border-radius: 5px; font-family: monospace; font-size: 12px; color: #94a3b8; min-height: 60px; white-space: pre-wrap;">Console output...</div>
             `;
         }
 
         window.checkPseudo = () => {
-            feedback.textContent = "✅ Logic Passed! Tests successful.";
+            const userCode = document.getElementById('pcCode').value;
+            const outputDiv = document.getElementById('pcOutput');
+            
+            // Testing configurations: input is ALWAYS an array of arguments to be spread
+            const testConfigs = [
+                { name: "Average", args: [[10, 20, 30, 40]], expected: 25 },
+                { name: "CountAbove", args: [[1, 5, 10, 2, 8], 4], expected: 3 },
+                { name: "MaxValue", args: [[5, 12, 3, 9]], expected: 12 },
+                { name: "ReplaceAll", args: [["apple", "pear", "apple"], "apple", "peach"], expected: ["peach", "pear", "peach"] },
+                { name: "GetEvens", args: [[1, 2, 3, 4, 5, 6]], expected: [2, 4, 6] }
+            ];
+
+            const task = testConfigs[currentSectorNum - 1];
+
+            try {
+                // This converts the string function into a callable object
+                const testFunc = eval(`(${userCode})`);
+                
+                if (typeof testFunc !== 'function') {
+                    throw new Error("Invalid function format. Keep the 'function Name(param) { ... }' structure.");
+                }
+
+                // Run the user's code with the test arguments
+                const result = testFunc(...task.args);
+                
+                const resStr = JSON.stringify(result);
+                const expStr = JSON.stringify(task.expected);
+
+                outputDiv.innerHTML = `> Running tests for ${task.name}...\n> Input: ${JSON.stringify(task.args)}\n> Received: ${resStr}\n> Expected: ${expStr}`;
+
+                if (resStr === expStr) {
+                    outputDiv.style.borderColor = "#10b981";
+                    feedback.style.color = "#10b981";
+                    feedback.textContent = "✅ Logic Passed! Tests successful.";
+                    document.getElementById('nextBtn').style.display = 'block';
+                } else {
+                    outputDiv.style.borderColor = "#ef4444";
+                    feedback.style.color = "#ef4444";
+                    feedback.textContent = "❌ Result mismatch. Check your math/logic.";
+                }
+
+            } catch (e) {
+                outputDiv.style.borderColor = "#ef4444";
+                outputDiv.innerHTML = `> Runtime Error:\n${e.message}\n\nTip: For Sector 1, make sure to use 'nums.length' to divide.`;
+                feedback.style.color = "#ef4444";
+                feedback.textContent = "❌ Error in Pseudocode.";
+            }
         };
 
         function renderMCQ() {
