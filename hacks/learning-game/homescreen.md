@@ -610,9 +610,24 @@ permalink: /learninggame/home
                 b.className = 'btn';
                 b.style = "background: #334155; color: white; margin-bottom: 5px; width: 100%; text-align: left;";
                 b.textContent = opt;
-                b.onclick = () => { feedback.textContent = i === q.c ? "✅ Correct!" : "❌ Try again."; };
+                b.onclick = () => {
+                    if (i === q.c) {
+                        feedback.style.color = "#10b981";
+                        feedback.textContent = "✅ Correct! Sector can now be completed.";
+                        setModulePassed(currentSectorNum, 2, true);
+                    } else {
+                        feedback.style.color = "#ef4444";
+                        feedback.textContent = "❌ Try again.";
+                        setModulePassed(currentSectorNum, 2, false);
+                    }
+                };
+
                 mContent.appendChild(b);
             });
+
+            setModulePassed(currentSectorNum, 2, false);
+            updateNavButtons();
+
         }
 
         function movePlayer(dx, dy) {
