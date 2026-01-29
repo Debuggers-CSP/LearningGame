@@ -111,17 +111,17 @@ permalink: /learninggame/home
         .badge-display { font-size: 48px; text-align: center; margin: 20px 0; color: #fbbf24; text-shadow: 0 0 20px rgba(251,191,36,0.4); }
 
         .progress-container {
-            position: absolute;
-            top: 10px;
+            position: fixed; /* Change to fixed to avoid interfering with the maze layout */
+            top: 20px; /* Adjusted to ensure it does not overlap with other elements */
             left: 50%;
             transform: translateX(-50%);
             width: 80%;
-            height: 20px;
-            background: rgba(15, 23, 42, 0.5);
-            border: 2px solid rgba(6,182,212,0.4);
-            border-radius: 10px;
+            height: 15px; /* Reduced height to make it less intrusive */
+            background: rgba(15, 23, 42, 0.7); /* Slightly darker background for better contrast */
+            border: 1px solid rgba(6,182,212,0.4); /* Reduced border thickness */
+            border-radius: 8px; /* Slightly smaller border radius */
             overflow: hidden;
-            z-index: 10;
+            z-index: 100; /* Ensure it stays above other elements */
         }
 
         .progress-bar {
@@ -389,7 +389,7 @@ permalink: /learninggame/home
             for (let x=0; x<5; x++) {
                 const c = document.createElement('div'); c.className = 'r-cell';
                 if (level.walls.some(w => w[0] === x && w[1] === y)) c.classList.add('r-wall');
-                if (x === level.goal[0] && y === level.goal[1]) c.textContent = '⭐';
+                if (x === level.goal[0] && y === level.goal[1]) c.textContent = '⭐
                 if (x === pos[0] && y === pos[1]) c.textContent = icons[dir];
                 grid.appendChild(c);
             }
