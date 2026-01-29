@@ -109,6 +109,27 @@ permalink: /learninggame/home
         .summary-card { text-align: left; color: #e2e8f0; }
         .summary-row { display: flex; justify-content: space-between; margin: 10px 0; border-bottom: 1px solid rgba(148,163,184,0.1); padding-bottom: 5px; }
         .badge-display { font-size: 48px; text-align: center; margin: 20px 0; color: #fbbf24; text-shadow: 0 0 20px rgba(251,191,36,0.4); }
+
+        .progress-container {
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80%;
+            height: 20px;
+            background: rgba(15, 23, 42, 0.5);
+            border: 2px solid rgba(6,182,212,0.4);
+            border-radius: 10px;
+            overflow: hidden;
+            z-index: 10;
+        }
+
+        .progress-bar {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%);
+            transition: width 0.3s ease;
+        }
     </style>
 </head>
 <body>
@@ -146,6 +167,10 @@ permalink: /learninggame/home
                     <button class="btn" id="backBtn" style="display:none; background: #10b981; color: white;">Calculate Results</button>
                 </div>
             </div>
+        </div>
+
+        <div class="progress-container">
+            <div class="progress-bar" id="progressBar"></div>
         </div>
     </div>
 
@@ -480,6 +505,25 @@ permalink: /learninggame/home
     });
 
     drawMaze();
+
+    function updateProgressBar() {
+        const progressBar = document.getElementById('progressBar');
+        const totalSectors = 5; // Total number of sectors
+        const completed = completedSectors.size; // Number of completed sectors
+        const progressPercentage = (completed / totalSectors) * 100;
+        progressBar.style.width = `${progressPercentage}%`;
+    }
+
+    // Call updateProgressBar whenever a sector is completed
+    function closeSector() {
+        modal.classList.remove('active');
+        completedSectors.add(currentSectorNum);
+        drawMaze();
+        updateProgressBar(); // Update progress bar
+    }
+
+    // Initialize progress bar on page load
+    updateProgressBar();
 </script>
 </body>
 </html>
