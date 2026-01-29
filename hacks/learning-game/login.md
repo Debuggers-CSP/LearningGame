@@ -633,7 +633,7 @@ async function handleRegister(event) {
   });
 
   function continueToGame() {
-    window.location.href = '/learninggame/home';
+    window.location.href = '/learninggame/character';
   }
 
   async function signOut() {
