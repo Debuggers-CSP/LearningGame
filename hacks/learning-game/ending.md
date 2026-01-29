@@ -408,15 +408,22 @@ permalink: /learninggame/ending/
     }
 
     function renderBadges(badges) {
-      const slots = [1, 2, 3, 4, 5];
+      const slots = [
+        { id: 1, label: 'Stop 1' },
+        { id: 2, label: 'Stop 2' },
+        { id: 3, label: 'Stop 3' },
+        { id: 4, label: 'Stop 4' },
+        { id: 5, label: 'Stop 5' },
+        { id: 'final', label: 'Final' }
+      ];
       badgeGrid.innerHTML = '';
       slots.forEach((slot) => {
-        const badge = badges.find((b) => b.stopId === slot);
+        const badge = badges.find((b) => b.stopId === slot.id);
         const el = document.createElement('div');
         el.className = 'badge' + (badge ? ' earned' : '');
         el.innerHTML = `
           <div>${badge ? (badgeIcons[badge.badgeName] || '⭐') : '🔒'}</div>
-          <strong>Stop ${slot}</strong>
+          <strong>${slot.label}</strong>
           <span>${badge ? badge.badgeName : 'Not earned'}</span>
         `;
         badgeGrid.appendChild(el);
@@ -490,6 +497,8 @@ permalink: /learninggame/ending/
       // First, always load and display localStorage data
       const localProgress = JSON.parse(localStorage.getItem('learninggame_progress') || '{}');
       const progressArray = Object.values(localProgress).sort((a, b) => a.stopId - b.stopId);
+      const savedAnswerRaw = localStorage.getItem('learninggame_final_answer');
+      const savedAnswer = savedAnswerRaw ? JSON.parse(savedAnswerRaw) : null;
       
       console.log('Local progress:', progressArray);
       
@@ -500,6 +509,9 @@ permalink: /learninggame/ending/
           badgeName: p.badgeName || 'Earned',
           score: p.score
         }));
+        if (savedAnswer?.isCorrect) {
+          badgesToRender.push({ stopId: 'final', badgeName: 'Master', score: 100 });
+        }
         renderBadges(badgesToRender);
         renderAttempts(progressArray);
         
@@ -568,10 +580,9 @@ permalink: /learninggame/ending/
       }
 
       // Check for saved final answer
-      const savedAnswer = localStorage.getItem('learninggame_final_answer');
-      if (savedAnswer) {
+      if (savedAnswerRaw) {
         try {
-          const answerData = JSON.parse(savedAnswer);
+          const answerData = savedAnswer;
           document.getElementById('finalAnswer').value = answerData.answer || '';
           if (answerData.isCorrect !== undefined) {
             answerStatus.className = `status ${answerData.isCorrect ? 'ok' : 'err'}`;
