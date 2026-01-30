@@ -28,7 +28,7 @@ permalink: /learninggame/hints-instructions
     }
 
     .instruction-card::before {
-        content: "3RD PARTY API LINK: ESTABLISHED // AI CORE: ONLINE";
+        content: "3RD-PARTY AI STATUS: READY // NEURAL LINK: STANDBY";
         position: absolute;
         top: 15px;
         right: 25px;
@@ -74,111 +74,126 @@ permalink: /learninggame/hints-instructions
     }
 
     code { color: #fbbf24; font-weight: bold; }
-    
-    .api-call { color: #f472b6; font-weight: bold; }
+    .file-path { color: #f472b6; font-family: monospace; font-weight: bold; }
 </style>
 
 <div class="instruction-card">
-    <h1>🤖 Mission: AI-Generated Hints</h1>
-    <div class="subtitle">// ASSIGNED TO: CADET CYRUS // PROTOCOL: 3RD PARTY INTEGRATION //</div>
+    <h1>🤖 Mission: AI Neural Link (Hints)</h1>
+    <div class="subtitle">// INSTRUCTIONAL OVERRIDE FOR CADET CYRUS // OBJECTIVE: FULL-STACK AI INTEGRATION //</div>
 
-    <p>Cadet Cyrus, your task is to implement the <strong>AI Neural Link</strong>. You must use an <strong>External 3rd Party API</strong> (OpenAI or Groq) to generate hints based on the specific question the user is stuck on. You will then save these hints to our database to satisfy the Create PT requirements.</p>
+    <p>Cadet Cyrus, your task is to implement the <strong>Station AI Neural Link</strong>. You will replace the old hard-coded hints with a system that uses an <strong>External 3rd Party AI</strong> to generate unique hints based on the actual question text on the user's screen. This data is then saved in our database to satisfy the Create PT requirements.</p>
 
+    <!-- STEP 1 -->
     <div class="step">
-        <span class="pt-badge">Skill B: 3rd Party API Procedure</span>
-        <h2>1. The External AI Procedure (<code>api/robop_api.py</code>)</h2>
-        <p>First, run <code>pip install requests</code> in your terminal. Then, add this procedure to your Python file. This function calls a 3rd party AI to generate hints.</p>
+        <span class="pt-badge">Task 1: Database (Skill B: List)</span>
+        <p>Open <span class="file-path">model/robop_user.py</span>. Add this class at the very bottom. This table satisfies your <strong>List</strong> requirement by storing a collection of hint strings in JSON format.</p>
+<pre>
+class StationHint(db.Model):
+    """Satisfies the 'List' requirement for the Create PT"""
+    __tablename__ = "StationHint"
+    id = db.Column(db.Integer, primary_key=True)
+    _module_key = db.Column(db.String(64), unique=True, nullable=False) # e.g. "s1_m0"
+    _hint_collection = db.Column(db.JSON, nullable=False) # Stores the list of AI hints
+
+    def __init__(self, key, hints):
+        self._module_key = key
+        self._hint_collection = hints
+</pre>
+    </div>
+
+    <!-- STEP 2 -->
+    <div class="step">
+        <span class="pt-badge">Task 2: AI Caller (Skill B: 3rd Party API)</span>
+        <p>Open <span class="file-path">api/robop_api.py</span>. Add this <strong>Procedure</strong> at the bottom. This uses an AI (like Groq or OpenAI) to generate hints based on the question text.</p>
 <pre>
 import requests
 
-def generate_ai_hints(question_text):
-    # This is the 3rd Party API Call (Using Groq or OpenAI)
-    URL = "https://api.groq.com/openai/v1/chat/completions"
-    HEADERS = {"Authorization": "Bearer YOUR_API_KEY"}
+def call_ai_api(question_text):
+    # Setup your 3rd Party Link (Use Groq or OpenAI)
+    api_key = "YOUR_API_KEY_HERE"
+    url = "https://api.groq.com/openai/v1/chat/completions"
     
-    # Procedural Logic: Construct a prompt to get 3 specific hints
-    prompt = f"Provide 3 helpful hints for this coding question: {question_text}. Format as a JSON list of strings."
+    # Logic: Ask AI to help with the specific question
+    prompt = f"Provide a list of 3 short hints for: {question_text}. Return ONLY a JSON list."
     
-    response = requests.post(URL, headers=HEADERS, json={
+    response = requests.post(url, headers={"Authorization": f"Bearer {api_key}"}, json={
         "model": "llama3-8b-8192",
-        "messages": [{"role": "user", "content": prompt}],
-        "response_format": {"type": "json_object"}
+        "messages": [{"role": "user", "content": prompt}]
     })
     
-    # Output: Extract the list from the 3rd party response
+    # Iteration: The AI returns a list we can iterate through later
     return response.json()['choices'][0]['message']['content']
 </pre>
     </div>
 
+    <!-- STEP 3 -->
     <div class="step">
-        <span class="pt-badge">Skill B: Selection & Storage</span>
-        <h2>2. Build the Hint Terminal (<code>api/robop_api.py</code>)</h2>
-        <p>This <code>POST</code> route handles the logic. It uses <b>Selection</b> to check if we already have the hint in our <b>List</b> (Database). If not, it triggers the 3rd Party Procedure.</p>
+        <span class="pt-badge">Task 3: The Route (Skill B: Selection)</span>
+        <p>Still in <span class="file-path">api/robop_api.py</span>, add the <code>POST</code> route. It uses <strong>Selection</strong> (if/else) to decide whether to fetch from the DB or trigger the AI Procedure.</p>
 <pre>
 @robop_api.route("/get_hint", methods=["POST"])
 def get_hint():
     data = request.get_json()
-    module_key = data.get("module_key")
-    q_text = data.get("question") # Input from frontend
+    key = data.get("module_key")
+    q_text = data.get("question") # Grabs the question from the screen
     idx = data.get("attempt") 
 
-    # 1. SELECTION: Check if hint exists in our DB List
-    entry = StationHint.query.filter_by(_module_key=module_key).first()
+    # SELECTION: Check if we have already saved these hints in our List
+    entry = StationHint.query.filter_by(_module_key=key).first()
     
     if not entry:
-        # 2. PROCEDURE: Call 3rd Party API if DB is empty
-        new_hints = generate_ai_hints(q_text) 
-        entry = StationHint(module_key, new_hints)
+        # If not in DB, call the 3rd Party AI Procedure
+        new_hints = call_ai_api(q_text)
+        entry = StationHint(key, new_hints) 
         db.session.add(entry)
         db.session.commit()
 
-    # 3. OUTPUT: Return the specific hint from the list
-    return jsonify({"hint": entry._hint_list[idx]})
+    # Output the specific hint requested
+    return jsonify({"hint": entry._hint_collection[idx]})
 </pre>
     </div>
 
+    <!-- STEP 4 -->
     <div class="step">
-        <span class="pt-badge">Skill B: Iteration & Frontend I/O</span>
-        <h2>3. Update the UI Logic (<code>gameteacher.md</code>)</h2>
-        <p>Your <code>toggleHint()</code> function must now grab the <strong>actual question text</strong> from the screen to send it to the AI.</p>
+        <span class="pt-badge">Task 4: Frontend (Skill B: Input/Output)</span>
+        <p>Open <span class="file-path">gameteacher.md</span>. Replace your entire <code>toggleHint()</code> function. This captures the text from the screen and sends it to the AI.</p>
 <pre>
+let hintCounter = 0; // Local click tracker
+
 async function toggleHint() {
     const bubble = document.getElementById('help-bubble');
-    // Grab the current question text from the UI
-    const currentQ = document.getElementById('questionText').innerText;
+    
+    // ROTE LOGIC: Grab the question text automatically from the UI
+    const qText = document.getElementById('moduleContent').innerText;
 
-    // INPUT: Send data to your Full-Stack API
+    // INPUT: Send the screen text and module key to the backend
     const response = await fetch(`${window.API_URL}/get_hint`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
             module_key: `s${currentSectorNum}_m${currentQuestion}`,
-            question: currentQ,
-            attempt: localHintAttempt 
+            question: qText,
+            attempt: hintCounter 
         })
     });
 
     const data = await response.json();
     
-    // OUTPUT: Display the AI-generated hint
+    // OUTPUT: Display the AI result in the UI bubble
     bubble.innerText = data.hint;
     bubble.style.display = 'block';
+    
+    if (hintCounter < 2) hintCounter++; // Increment tracker
 }
 </pre>
     </div>
 
-    <div class="step">
-        <h2>✅ Cyrus's Create PT Checklist</h2>
-        <ul>
-            <li><strong>3rd Party API:</strong> You are using <span class="api-call"> Groq/OpenAI</span> to create content dynamically.</li>
-            <li><strong>List:</strong> Your <code>StationHint</code> table stores a JSON List of strings.</li>
-            <li><strong>Procedure:</strong> <code>generate_ai_hints</code> is your complex procedure with parameters.</li>
-            <li><strong>Selection:</strong> The <code>if not entry</code> block decides whether to use the DB or the 3rd Party API.</li>
-            <li><strong>Iteration:</strong> Use a <code>for</code> loop in your Python code to clean the AI strings before saving them to the DB.</li>
-        </ul>
+    <div style="background: rgba(16, 185, 129, 0.1); border: 1px solid #10b981; padding: 20px; border-radius: 12px; margin-top: 30px;">
+        <h3 style="color: #10b981; margin-top: 0;">✅ Ready for the Professor</h3>
+        <p style="font-size: 14px; margin-bottom: 0;">Cyrus, you now have: a <strong>Procedure</strong> (<code>call_ai_api</code>), a <strong>List</strong> (<code>_hint_collection</code>), <strong>Selection</strong> (<code>if not entry</code>), and <strong>Input/Output</strong> (the <code>POST</code> request). This is a perfect Full-Stack individual task.</p>
     </div>
 
-    <div style="text-align: center; margin-top: 40px;">
+    <div style="text-align: center; margin-top: 40px; border-top: 1px solid rgba(6,182,212,0.2); padding-top: 20px;">
         <a href="{{ '/learninggame/home' | relative_url }}" style="color: #06b6d4; text-decoration: none; font-weight: bold; text-transform: uppercase; font-size: 14px;">← Return to Station Deck</a>
     </div>
 </div>
