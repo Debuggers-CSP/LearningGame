@@ -1,7 +1,7 @@
 ---
 layout: default
 title: Maze - Homescreen
-authors: Anika, Cyrus, Rishabh, Jaynee, Lillian, Meryl, Rebecca, Avantika
+authors: Anika, Cyrus, Rishabh, Jaynee, Lillian
 permalink: /learninggame/home
 ---
 
@@ -109,27 +109,6 @@ permalink: /learninggame/home
         .summary-card { text-align: left; color: #e2e8f0; }
         .summary-row { display: flex; justify-content: space-between; margin: 10px 0; border-bottom: 1px solid rgba(148,163,184,0.1); padding-bottom: 5px; }
         .badge-display { font-size: 48px; text-align: center; margin: 20px 0; color: #fbbf24; text-shadow: 0 0 20px rgba(251,191,36,0.4); }
-
-        .progress-container {
-            position: absolute;
-            top: 10px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 80%;
-            height: 20px;
-            background: rgba(15, 23, 42, 0.5);
-            border: 2px solid rgba(6,182,212,0.4);
-            border-radius: 10px;
-            overflow: hidden;
-            z-index: 10;
-        }
-
-        .progress-bar {
-            height: 100%;
-            width: 0%;
-            background: linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%);
-            transition: width 0.3s ease;
-        }
     </style>
 </head>
 <body>
@@ -385,7 +364,7 @@ permalink: /learninggame/home
             for (let x=0; x<5; x++) {
                 const c = document.createElement('div'); c.className = 'r-cell';
                 if (level.walls.some(w => w[0] === x && w[1] === y)) c.classList.add('r-wall');
-                if (x === level.goal[0] && y === level.goal[1]) c.textContent = '⭐
+                if (x === level.goal[0] && y === level.goal[1]) c.textContent = '⭐';
                 if (x === pos[0] && y === pos[1]) c.textContent = icons[dir];
                 grid.appendChild(c);
             }
