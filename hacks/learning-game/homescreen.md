@@ -1,7 +1,7 @@
 ---
 layout: default
 title: Maze - Homescreen
-authors: Anika, Cyrus, Rishabh, Jaynee, Lillian
+authors: Anika, Cyrus, Rishabh, Jaynee, Lillian, Avantika
 permalink: /learninggame/home
 ---
 
@@ -103,33 +103,13 @@ permalink: /learninggame/home
         .btn { padding: 12px 20px; border-radius: 12px; border: none; cursor: pointer; font-weight: 900; }
         .btn-blue { background: #06b6d4; color: white; }
         .btn-check { background: #fbbf24; color: black; width: 100%; margin-top: 10px; }
+        .btn-autofill { background: #a855f7; color: white; }
         
         #feedback { margin-top: 10px; font-weight: 800; text-align: center; min-height: 20px; }
 
         .summary-card { text-align: left; color: #e2e8f0; }
         .summary-row { display: flex; justify-content: space-between; margin: 10px 0; border-bottom: 1px solid rgba(148,163,184,0.1); padding-bottom: 5px; }
         .badge-display { font-size: 48px; text-align: center; margin: 20px 0; color: #fbbf24; text-shadow: 0 0 20px rgba(251,191,36,0.4); }
-
-        .progress-container {
-            position: fixed; /* Change to fixed to avoid interfering with the maze layout */
-            top: 20px; /* Adjusted to ensure it does not overlap with other elements */
-            left: 50%;
-            transform: translateX(-50%);
-            width: 80%;
-            height: 15px; /* Reduced height to make it less intrusive */
-            background: rgba(15, 23, 42, 0.7); /* Slightly darker background for better contrast */
-            border: 1px solid rgba(6,182,212,0.4); /* Reduced border thickness */
-            border-radius: 8px; /* Slightly smaller border radius */
-            overflow: hidden;
-            z-index: 100; /* Ensure it stays above other elements */
-        }
-
-        .progress-bar {
-            height: 100%;
-            width: 0%;
-            background: linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%);
-            transition: width 0.3s ease;
-        }
     </style>
 </head>
 <body>
@@ -164,13 +144,10 @@ permalink: /learninggame/home
 
                 <div style="display: flex; gap: 10px; margin-top: 20px;">
                     <button class="btn btn-blue" id="nextBtn">Next Module →</button>
+                    <button class="btn btn-autofill" id="autofillBtn">✨ Autofill</button>
                     <button class="btn" id="backBtn" style="display:none; background: #10b981; color: white;">Calculate Results</button>
                 </div>
             </div>
-        </div>
-
-        <div class="progress-container">
-            <div class="progress-bar" id="progressBar"></div>
         </div>
     </div>
 
@@ -214,6 +191,7 @@ permalink: /learninggame/home
     const feedback = document.getElementById('feedback');
     const nextBtn = document.getElementById('nextBtn');
     const backBtn = document.getElementById('backBtn');
+    const autofillBtn = document.getElementById('autofillBtn');
 
     // Scoring and Game State
     let moduleAttempts = [0, 0, 0]; 
@@ -335,6 +313,7 @@ permalink: /learninggame/home
         else renderMCQ();
 
         nextBtn.style.display = currentQuestion < 2 ? 'block' : 'none';
+        autofillBtn.style.display = currentQuestion < 2 ? 'block' : 'none';
         backBtn.style.display = currentQuestion === 2 ? 'block' : 'none';
     }
 
@@ -389,7 +368,7 @@ permalink: /learninggame/home
             for (let x=0; x<5; x++) {
                 const c = document.createElement('div'); c.className = 'r-cell';
                 if (level.walls.some(w => w[0] === x && w[1] === y)) c.classList.add('r-wall');
-                if (x === level.goal[0] && y === level.goal[1]) c.textContent = '⭐
+                if (x === level.goal[0] && y === level.goal[1]) c.textContent = '⭐';
                 if (x === pos[0] && y === pos[1]) c.textContent = icons[dir];
                 grid.appendChild(c);
             }
@@ -398,13 +377,13 @@ permalink: /learninggame/home
 
     function renderPseudoCode() {
         const currentTask = [
-            {t:"Mean", q: "function Average(nums) {\n  let sum = 0;\n  for (let n of nums) {\n    sum += n;\n  }\n  return sum / nums.length;\n}"},
-            {t:"Filter", q: "function CountAbove(nums, t) {\n  let count = 0;\n  for (let n of nums) {\n    if (n > t) {\n      count += 1;\n    }\n  }\n  return count;\n}"},
-            {t:"Max", q: "function MaxValue(nums) {\n  let max = nums[0];\n  for (let n of nums) {\n    if (n > max) {\n      max = n;\n    }\n  }\n  return max;\n}"},
-            {t:"Swap", q: "function ReplaceAll(list, t, r) {\n  for (let i=0; i<list.length; i++) {\n    if (list[i] === t) {\n      list[i] = r;\n    }\n  }\n  return list;\n}"},
-            {t:"Evens", q: "function GetEvens(nums) {\n  let evens = [];\n  for (let n of nums) {\n    if (n % 2 === 0) {\n      evens.push(n);\n    }\n  }\n  return evens;\n}"}
+            {t:"Mean"},
+            {t:"Filter"},
+            {t:"Max"},
+            {t:"Swap"},
+            {t:"Evens"}
         ][currentSectorNum - 1];
-        mContent.innerHTML = `<p style="color: #e2e8f0; margin-bottom:10px;">${currentTask.t} Task</p><textarea id="pcCode">${currentTask.q}</textarea><button class="btn btn-check" id="validateBtn">Validate</button><div id="pcOutput" style="margin-top:10px; background:#020617; padding:10px; border-radius:8px; font-family:monospace; font-size:12px;">Console...</div>`;
+        mContent.innerHTML = `<p style="color: #e2e8f0; margin-bottom:10px;">${currentTask.t} Task</p><textarea id="pcCode" placeholder="Write your function here..."></textarea><button class="btn btn-check" id="validateBtn">Validate</button><div id="pcOutput" style="margin-top:10px; background:#020617; padding:10px; border-radius:8px; font-family:monospace; font-size:12px;">Console...</div>`;
         document.getElementById('validateBtn').onclick = checkPseudo;
     }
 
@@ -433,6 +412,60 @@ permalink: /learninggame/home
             mContent.appendChild(b);
         });
     }
+
+    // NEW: AUTOFILL FUNCTIONALITY
+    autofillBtn.onclick = async () => {
+        try {
+            feedback.textContent = '⏳ Fetching answer...';
+            feedback.style.color = '#06b6d4';
+            
+            const response = await fetch(`${window.API_URL}/autofill`, {
+                ...window.authOptions,
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    sector_id: currentSectorNum,
+                    question_num: currentQuestion
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to fetch answer');
+            }
+
+            const data = await response.json();
+            
+            if (data.success) {
+                // Fill in the answer based on question type
+                if (currentQuestion === 0) {
+                    // Robot simulation
+                    document.getElementById('rcInput').value = data.answer;
+                    feedback.textContent = '✨ Answer filled! Click "Execute Command" to run.';
+                    feedback.style.color = '#a855f7';
+                } else if (currentQuestion === 1) {
+                    // Pseudocode
+                    document.getElementById('pcCode').value = data.answer;
+                    feedback.textContent = '✨ Answer filled! Click "Validate" to check.';
+                    feedback.style.color = '#a855f7';
+                } else if (currentQuestion === 2) {
+                    // MCQ - automatically click the correct answer
+                    const buttons = mContent.querySelectorAll('.btn');
+                    if (buttons[data.answer]) {
+                        buttons[data.answer].click();
+                        feedback.textContent = '✨ Correct answer selected!';
+                        feedback.style.color = '#10b981';
+                    }
+                }
+            } else {
+                feedback.textContent = '❌ ' + (data.message || 'Failed to get answer');
+                feedback.style.color = '#ef4444';
+            }
+        } catch (error) {
+            console.error('Autofill error:', error);
+            feedback.textContent = '❌ Error connecting to server';
+            feedback.style.color = '#ef4444';
+        }
+    };
 
     backBtn.onclick = async () => {
         let weightedSum = 0;
@@ -505,25 +538,6 @@ permalink: /learninggame/home
     });
 
     drawMaze();
-
-    function updateProgressBar() {
-        const progressBar = document.getElementById('progressBar');
-        const totalSectors = 5; // Total number of sectors
-        const completed = completedSectors.size; // Number of completed sectors
-        const progressPercentage = (completed / totalSectors) * 100;
-        progressBar.style.width = `${progressPercentage}%`;
-    }
-
-    // Call updateProgressBar whenever a sector is completed
-    function closeSector() {
-        modal.classList.remove('active');
-        completedSectors.add(currentSectorNum);
-        drawMaze();
-        updateProgressBar(); // Update progress bar
-    }
-
-    // Initialize progress bar on page load
-    updateProgressBar();
 </script>
 </body>
 </html>
