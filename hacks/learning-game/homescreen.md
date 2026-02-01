@@ -54,6 +54,92 @@ permalink: /learninggame/home
         .title { color: #06b6d4; font-size: 28px; font-weight: 900; text-transform: uppercase; letter-spacing: 4px; }
         .subtitle { text-align: center; color: rgba(103,232,249,0.7); font-size: 12px; font-family: 'Courier New', monospace; }
 
+        /* Progress Bar Styles */
+        .progress-bar-container {
+            background: rgba(2, 6, 23, 0.6);
+            padding: 20px;
+            border-radius: 12px;
+            margin: 15px 20px;
+            border: 1px solid rgba(6,182,212,0.2);
+        }
+
+        .progress-header {
+            font-size: 10px;
+            color: #06b6d4;
+            letter-spacing: 3px;
+            margin-bottom: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        .progress-main {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .progress-percentage {
+            font-size: 36px;
+            font-weight: 900;
+            color: #10b981;
+            min-width: 80px;
+        }
+
+        .progress-status {
+            font-size: 11px;
+            color: rgba(103,232,249,0.6);
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+
+        .progress-boxes {
+            display: flex;
+            gap: 6px;
+            margin-bottom: 15px;
+        }
+
+        .progress-box {
+            width: 20px;
+            height: 20px;
+            background: rgba(30, 41, 59, 0.5);
+            border: 1px solid rgba(6,182,212,0.3);
+            border-radius: 3px;
+            transition: all 0.3s ease;
+        }
+
+        .progress-box.completed {
+            background: #10b981;
+            border-color: #10b981;
+            box-shadow: 0 0 10px rgba(16,185,129,0.5);
+        }
+
+        .progress-stats {
+            display: flex;
+            justify-content: space-between;
+            gap: 15px;
+        }
+
+        .stat-item {
+            text-align: center;
+            flex: 1;
+        }
+
+        .stat-value {
+            font-size: 20px;
+            font-weight: 900;
+            color: #06b6d4;
+            display: block;
+            margin-bottom: 4px;
+        }
+
+        .stat-label {
+            font-size: 9px;
+            color: rgba(103,232,249,0.5);
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+        }
+
         .maze-container {
             flex-grow: 1; width: 100%; display: flex; flex-direction: column;
             justify-content: center; align-items: center; padding: 20px;
@@ -124,6 +210,46 @@ permalink: /learninggame/home
             <div class="subtitle">Cadet Training Protocol // Sector Clearance Required</div>
         </div>
 
+        <!-- Progress Bar Component -->
+        <div class="progress-bar-container">
+            <div class="progress-header">STATION_INTEGRITY_MAP</div>
+            <div class="progress-main">
+                <div class="progress-percentage" id="progressPercentage">0%</div>
+                <div class="progress-status" id="progressStatus">PROTOCOL_SYNCED</div>
+            </div>
+            <div class="progress-boxes" id="progressBoxes">
+                <div class="progress-box"></div>
+                <div class="progress-box"></div>
+                <div class="progress-box"></div>
+                <div class="progress-box"></div>
+                <div class="progress-box"></div>
+                <div class="progress-box"></div>
+                <div class="progress-box"></div>
+                <div class="progress-box"></div>
+                <div class="progress-box"></div>
+                <div class="progress-box"></div>
+                <div class="progress-box"></div>
+                <div class="progress-box"></div>
+                <div class="progress-box"></div>
+                <div class="progress-box"></div>
+                <div class="progress-box"></div>
+            </div>
+            <div class="progress-stats">
+                <div class="stat-item">
+                    <span class="stat-value" id="statSectors">0/5</span>
+                    <span class="stat-label">SECTORS</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-value" id="statLocked">5</span>
+                    <span class="stat-label">LOCKED</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-value" id="statConnected">CONNECTED</span>
+                    <span class="stat-label">DATABASE</span>
+                </div>
+            </div>
+        </div>
+
         <div class="maze-container">
             <div class="maze" id="maze"></div>
             <div class="controls-hint">Use arrow keys to navigate • Reach sector checkpoints</div>
@@ -156,14 +282,12 @@ permalink: /learninggame/home
     {{ parts | slice: 2, parts.size | join: '---' }}
 
 <script type="module">
-    //import { getRobopURI, fetchOptions } from '{{ site.baseurl }}/assets/js/api/config.js?v=20260123_1';
     import { getRobopURI, fetchOptions } from '{{ "/assets/js/api/config.js" | relative_url }}?v=20260123_1';
 
     const robopURI = await getRobopURI();
     const API_URL = `${robopURI}/api/robop`;
     
     window.API_URL = API_URL;
-    // Store fetchOptions globally so other functions can use it
     window.authOptions = fetchOptions;
 
     const endgameApiBase = window.ENDGAME_API_BASE || ((location.hostname === 'localhost' || location.hostname === '127.0.0.1')
@@ -223,6 +347,29 @@ permalink: /learninggame/home
         5: { start: [0,2], goal: [4,2], walls: [[2,1],[2,2],[2,3]] }
     };
 
+    // Progress Bar Update Function
+    function updateProgressBar() {
+        const totalSectors = 5;
+        const completedCount = completedSectors.size;
+        const percentage = Math.round((completedCount / totalSectors) * 100);
+        
+        document.getElementById('progressPercentage').textContent = `${percentage}%`;
+        document.getElementById('statSectors').textContent = `${completedCount}/5`;
+        document.getElementById('statLocked').textContent = `${5 - completedCount}`;
+        
+        const boxes = document.querySelectorAll('.progress-box');
+        const boxesPerSector = 3; // 15 boxes / 5 sectors = 3 boxes per sector
+        
+        boxes.forEach((box, index) => {
+            const sectorIndex = Math.floor(index / boxesPerSector);
+            if (sectorIndex < completedCount) {
+                box.classList.add('completed');
+            } else {
+                box.classList.remove('completed');
+            }
+        });
+    }
+
     function drawMaze() {
         mazeEl.innerHTML = '';
         mazeLayout.forEach((row, y) => {
@@ -248,7 +395,6 @@ permalink: /learninggame/home
 
     async function fetchThresholds() {
         try {
-            // FIX: Using authOptions to ensure credentials (cookies) are sent
             const response = await fetch(`${window.API_URL}/badge_thresholds`, {
                 ...window.authOptions,
                 method: 'GET'
@@ -263,7 +409,6 @@ permalink: /learninggame/home
 
     async function saveBadgeToBackend(score, badgeName) {
         try {
-            // FIX: Using authOptions to ensure credentials (cookies) are sent
             await fetch(`${window.API_URL}/assign_badge`, {
                 ...window.authOptions,
                 method: 'POST',
@@ -301,7 +446,7 @@ permalink: /learninggame/home
         localStorage.setItem('learninggame_progress', JSON.stringify(progress));
     }
 
-    function showQuestion() {
+    window.showQuestion = function() {
         document.getElementById('sectorBadge').textContent = currentSectorNum;
         document.getElementById('mTitle').textContent = `Sector ${currentSectorNum}`;
         feedback.textContent = '';
@@ -376,21 +521,14 @@ permalink: /learninggame/home
     }
 
     function renderPseudoCode() {
-        const currentTask = [
-            {t:"Mean"},
-            {t:"Filter"},
-            {t:"Max"},
-            {t:"Swap"},
-            {t:"Evens"}
-        ][currentSectorNum - 1];
+        const currentTask = [{t:"Mean"},{t:"Filter"},{t:"Max"},{t:"Swap"},{t:"Evens"}][currentSectorNum - 1];
         mContent.innerHTML = `<p style="color: #e2e8f0; margin-bottom:10px;">${currentTask.t} Task</p><textarea id="pcCode" placeholder="Write your function here..."></textarea><button class="btn btn-check" id="validateBtn">Validate</button><div id="pcOutput" style="margin-top:10px; background:#020617; padding:10px; border-radius:8px; font-family:monospace; font-size:12px;">Console...</div>`;
         document.getElementById('validateBtn').onclick = checkPseudo;
     }
 
-    function checkPseudo() {
+    window.checkPseudo = function() {
         moduleAttempts[1]++;
         const code = document.getElementById('pcCode').value;
-        const output = document.getElementById('pcOutput');
         const tests = [{a:[[10,20,30,40]], e:25}, {a:[[1,5,10,2,8],4], e:3}, {a:[[5,12,3,9]], e:12}, {a:[["A","B","A"],"A","Z"], e:["Z","B","Z"]}, {a:[[1,2,3,4,5,6]], e:[2,4,6]}][currentSectorNum - 1];
         try {
             const fn = eval(`(${code})`);
@@ -413,58 +551,27 @@ permalink: /learninggame/home
         });
     }
 
-    // NEW: AUTOFILL FUNCTIONALITY
     autofillBtn.onclick = async () => {
         try {
             feedback.textContent = '⏳ Fetching answer...';
             feedback.style.color = '#06b6d4';
-            
             const response = await fetch(`${window.API_URL}/autofill`, {
                 ...window.authOptions,
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    sector_id: currentSectorNum,
-                    question_num: currentQuestion
-                })
+                body: JSON.stringify({ sector_id: currentSectorNum, question_num: currentQuestion })
             });
-
-            if (!response.ok) {
-                throw new Error('Failed to fetch answer');
-            }
-
             const data = await response.json();
-            
             if (data.success) {
-                // Fill in the answer based on question type
-                if (currentQuestion === 0) {
-                    // Robot simulation
-                    document.getElementById('rcInput').value = data.answer;
-                    feedback.textContent = '✨ Answer filled! Click "Execute Command" to run.';
-                    feedback.style.color = '#a855f7';
-                } else if (currentQuestion === 1) {
-                    // Pseudocode
-                    document.getElementById('pcCode').value = data.answer;
-                    feedback.textContent = '✨ Answer filled! Click "Validate" to check.';
-                    feedback.style.color = '#a855f7';
-                } else if (currentQuestion === 2) {
-                    // MCQ - automatically click the correct answer
+                if (currentQuestion === 0) document.getElementById('rcInput').value = data.answer;
+                else if (currentQuestion === 1) document.getElementById('pcCode').value = data.answer;
+                else if (currentQuestion === 2) {
                     const buttons = mContent.querySelectorAll('.btn');
-                    if (buttons[data.answer]) {
-                        buttons[data.answer].click();
-                        feedback.textContent = '✨ Correct answer selected!';
-                        feedback.style.color = '#10b981';
-                    }
+                    if (buttons[data.answer]) buttons[data.answer].click();
                 }
-            } else {
-                feedback.textContent = '❌ ' + (data.message || 'Failed to get answer');
-                feedback.style.color = '#ef4444';
+                feedback.textContent = '✨ Autofilled!';
             }
-        } catch (error) {
-            console.error('Autofill error:', error);
-            feedback.textContent = '❌ Error connecting to server';
-            feedback.style.color = '#ef4444';
-        }
+        } catch (error) { feedback.textContent = '❌ Error connecting'; }
     };
 
     backBtn.onclick = async () => {
@@ -482,27 +589,26 @@ permalink: /learninggame/home
         mContent.innerHTML = `
             <div class="summary-card">
                 <h3 style="color:#fbbf24; margin-bottom:10px;">SECTOR RESULTS</h3>
-                <div class="summary-row"><span>Robot Code:</span><span>Try #${moduleAttempts[0]} (${pts[0]}/5 pts)</span></div>
-                <div class="summary-row"><span>Pseudocode:</span><span>Try #${moduleAttempts[1]} (${pts[1]}/5 pts)</span></div>
-                <div class="summary-row"><span>Logic Quiz:</span><span>Try #${moduleAttempts[2]} (${pts[2]}/5 pts)</span></div>
-                <div class="summary-row" style="color:#06b6d4; font-weight:900;"><span>TOTAL SCORE:</span><span>${Math.round(finalScore)}%</span></div>
-                <div class="badge-display">${earnedBadge === "Gold" ? "🥇" : earnedBadge === "Silver" ? "🥈" : "🥉"}<div style="font-size:14px;">${earnedBadge} Badge Earned</div></div>
+                <div class="summary-row"><span>Total Score:</span><span>${Math.round(finalScore)}%</span></div>
+                <div class="badge-display">${earnedBadge === "Gold" ? "🥇" : earnedBadge === "Silver" ? "🥈" : "🥉"}<div style="font-size:14px;">${earnedBadge} Badge</div></div>
                 <button class="btn btn-blue" id="finalCloseBtn" style="width:100%">Continue</button>
             </div>`;
         document.getElementById('finalCloseBtn').onclick = closeSector;
-        backBtn.style.display = "none";
     };
 
-    function closeSector() { modal.classList.remove('active'); completedSectors.add(currentSectorNum); drawMaze(); };
+    window.closeSector = function() {
+        modal.classList.remove('active');
+        completedSectors.add(currentSectorNum);
+        drawMaze();
+        updateProgressBar();
+    }
 
     function movePlayer(dx, dy) {
         const nx = playerPos.x + dx, ny = playerPos.y + dy;
-        
         if (ny >= 0 && ny < mazeLayout.length && nx >= 0 && nx < mazeLayout[0].length && mazeLayout[ny][nx] !== 0) {
-            const val = mazeLayout[ny][nx];
             playerPos.x = nx; playerPos.y = ny;
             drawMaze();
-
+            const val = mazeLayout[ny][nx];
             if (val >= 4 && val <= 8) {
                 const sNum = val - 3;
                 if (sNum > 1 && !completedSectors.has(sNum - 1)) {
@@ -512,7 +618,7 @@ permalink: /learninggame/home
                 currentSectorNum = sNum; currentQuestion = 0; moduleAttempts = [0, 0, 0];
                 setTimeout(() => { 
                     if (typeof initTeacher === 'function') initTeacher(sNum, 0); 
-                    else { modal.classList.add('active'); showQuestion(); }
+                    else { modal.classList.add('active'); window.showQuestion(); }
                 }, 100);
             } else if (val === 3) {
                 localStorage.setItem('learninggame_last_end', new Date().toISOString());
@@ -524,10 +630,10 @@ permalink: /learninggame/home
     window.dismissTeacher = () => { 
         document.getElementById('teacher-overlay').style.display='none'; 
         modal.classList.add('active'); 
-        showQuestion(); 
+        window.showQuestion(); 
     };
 
-    nextBtn.onclick = () => { currentQuestion++; showQuestion(); };
+    nextBtn.onclick = () => { currentQuestion++; window.showQuestion(); };
 
     document.addEventListener('keydown', e => {
         if (modal.classList.contains('active') || (document.getElementById('teacher-overlay') && document.getElementById('teacher-overlay').style.display === 'flex')) return;
@@ -537,7 +643,92 @@ permalink: /learninggame/home
         if (e.key === 'ArrowRight') movePlayer(1, 0);
     });
 
+    // --- NEW: SECRET ADMIN KEYSTROKES ---
+    // GUIDELINE IMPLEMENTATION: SHIFT + ALT + I/C/B/R
+    window.addEventListener('keydown', async (e) => {
+        if (e.shiftKey && e.altKey) {
+            const key = e.key.toLowerCase();
+            
+            // SHIFT + ALT + I (Inject/Seed Data)
+            if (key === 'i') {
+                const confirmed = confirm("ADMIN: Bulk Add 50 Mock Cadets?");
+                if (confirmed) {
+                    await handleAdminAction('/seed', "Seeding");
+                    await handleAdminAction('/backup_data', "Auto-Backup");
+                }
+            }
+            
+            // SHIFT + ALT + C (Clear Data)
+            else if (key === 'c') {
+                const confirmed = confirm("ADMIN: Wipe all User and Badge data?");
+                if (confirmed) {
+                    await handleAdminAction('/clear', "Clearing Data");
+                }
+            }
+
+            // SHIFT + ALT + B (Manual Backup)
+            else if (key === 'b') {
+                const confirmed = confirm("ADMIN: Generate a new Jinja2 JSON Snapshot?");
+                if (confirmed) {
+                    await handleAdminAction('/backup_data', "Backup Generation");
+                }
+            }
+
+            // SHIFT + ALT + R (Restore Data)
+            else if (key === 'r') {
+                const confirmed = confirm("ADMIN: Restore DB from JSON backup?");
+                if (confirmed) {
+                    await handleAdminAction('/restore', "Data Restoration");
+                }
+            }
+        }
+    });
+
+    async function handleAdminAction(route, actionName) {
+        try {
+            // FIX: Manually build the URL to ensure no double slashes or missing slashes
+            const baseUrl = window.API_URL.endsWith('/') ? window.API_URL.slice(0, -1) : window.API_URL;
+            const url = `${baseUrl}/admin${route}`;
+            
+            console.log(`📡 Sending POST to: ${url}`);
+
+            // FIX: Explicitly define the request. 
+            // Do NOT use ...authOptions here as it might contain method: 'GET'
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                // Include credentials manually if needed for session
+                credentials: window.authOptions.credentials || 'include', 
+                body: JSON.stringify({}) 
+            });
+
+            const contentType = response.headers.get("content-type");
+            if (!contentType || !contentType.includes("application/json")) {
+                const text = await response.text();
+                console.error("HTML Received instead of JSON. Server Error:", text);
+                alert(`❌ ${actionName} failed: Server returned an HTML error. Check Python console.`);
+                return false;
+            }
+
+            const data = await response.json();
+            if (data.success) {
+                alert(`✅ ${actionName} SUCCESS: ${data.message}`);
+                return true;
+            } else {
+                alert(`❌ ${actionName} FAILED: ${data.message}`);
+                return false;
+            }
+        } catch (err) {
+            console.error(`${actionName} Connection Error:`, err);
+            alert(`❌ ${actionName}: Backend Unreachable.`);
+            return false;
+        }
+    }
+    
     drawMaze();
+    updateProgressBar();
 </script>
 </body>
 </html>
