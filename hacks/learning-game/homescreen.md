@@ -321,7 +321,7 @@ permalink: /learninggame/home
     const API_URL = `${robopURI}/api/robop`;
 
     // NEW pseudocode question bank endpoints
-    const PSEUDOCODE_BANK_URL = `/api/pseudocode_bank`;
+    const PSEUDOCODE_BANK_URL = `${robopURI}/api/pseudocode_bank`;
 
     window.API_URL = API_URL;
     window.PSEUDOCODE_BANK_URL = PSEUDOCODE_BANK_URL;
