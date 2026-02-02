@@ -575,14 +575,20 @@ permalink: /learninggame/home
 
                 <textarea id="pcCode" placeholder="Write your pseudocode here..."></textarea>
 
-                <button class="btn btn-check" id="validateBtn">I wrote my solution</button>
+                <button class="btn btn-check" id="validateBtn">Generate + Check Answer</button>
 
-                <div id="pcOutput" style="margin-top:10px; background:#020617; padding:10px; border-radius:8px; font-family:monospace; font-size:12px; color:#06b6d4;">
-                    Tip: Write clear step-by-step pseudocode. This check only requires a non-empty response.
+                <div id="pcExport" style="margin-top:10px; background:#020617; padding:10px; border-radius:8px; font-family:monospace; font-size:12px; color:#06b6d4; white-space:pre-wrap;">
+                Exported code will appear here after you check.
                 </div>
+
+                <div id="pcOutput" style="margin-top:10px; background:#020617; padding:10px; border-radius:8px; font-family:monospace; font-size:12px; color:#06b6d4; white-space:pre-wrap;">
+                Checker output will appear here.
+                </div>
+
             `;
 
-            document.getElementById("validateBtn").onclick = checkPseudo;
+            document.getElementById("validateBtn").onclick = generateAndCheckPseudo;
+
         } catch (err) {
             console.error("Pseudocode bank fetch failed:", err);
             feedback.style.color = "#ef4444";
@@ -598,31 +604,118 @@ permalink: /learninggame/home
     }
 
 
-    function checkPseudo() {
+    function pseudoToExport(codeRaw) {
+        // Very lightweight "export": turns pseudocode-ish lines into a JS-ish skeleton.
+        // Not meant to run. It's for display + debugging student logic.
+        let code = (codeRaw || "").trim();
+
+        // Normalize arrows and common pseudocode tokens
+        code = code.replaceAll("←", "=");
+        code = code.replaceAll("≠", "!=");
+
+        const lines = code.split("\n").map(l => l.trim()).filter(Boolean);
+
+        const out = [];
+        out.push("// Exported from pseudocode (display-only)");
+        out.push("// Not executed. Used for checking structure.\n");
+        out.push("function solution() {");
+
+        for (let line of lines) {
+            const lower = line.toLowerCase();
+
+            // map common pseudocode patterns to readable JS-ish comments
+            if (lower.startsWith("input")) out.push(`  // ${line}`);
+            else if (lower.startsWith("display") || lower.startsWith("print") || lower.startsWith("output")) out.push(`  // ${line}`);
+            else if (lower.startsWith("if")) out.push(`  // ${line}`);
+            else if (lower.startsWith("else")) out.push(`  // ${line}`);
+            else if (lower.startsWith("for") || lower.startsWith("while") || lower.startsWith("repeat") || lower.startsWith("loop")) out.push(`  // ${line}`);
+            else if (lower.startsWith("return")) out.push(`  // ${line}`);
+            else out.push(`  // ${line}`);
+        }
+
+        out.push("}\n");
+        out.push("solution();");
+        return out.join("\n");
+    }
+
+    async function generateAndCheckPseudo() {
         moduleAttempts[1]++;
 
         const code = document.getElementById("pcCode")?.value || "";
+        const exportBox = document.getElementById("pcExport");
         const output = document.getElementById("pcOutput");
 
-        if (code.trim().length < 5) {
+        // Basic minimum
+        if (code.trim().length < 10) {
             feedback.style.color = "#fbbf24";
-            feedback.textContent = "⚠️ Write a little more pseudocode before continuing.";
-            if (output) output.textContent = "Not enough content yet (need a non-empty solution).";
+            feedback.textContent = "⚠️ Write a bit more pseudocode before checking.";
+            if (exportBox) exportBox.textContent = "Exported code will appear here after you check.";
+            if (output) output.textContent = "Not enough content yet.";
             return;
         }
 
-        feedback.style.color = "#10b981";
-        feedback.textContent = "✅ Submitted!";
-        if (output) {
-            output.textContent =
-                `Saved locally for this run.\n` +
-                `Question: ${currentPseudo.question_id} (${currentPseudo.level})\n` +
-                `Your response length: ${code.trim().length} chars`;
-        }
+        // 1) Export view
+        const exported = pseudoToExport(code);
+        if (exportBox) exportBox.textContent = exported;
 
-        nextBtn.disabled = false;
-        nextBtn.style.opacity = "1";
+        // 2) Call backend checker
+        feedback.style.color = "#06b6d4";
+        feedback.textContent = "⏳ Checking your answer...";
+
+        try {
+            const res = await fetch(`${window.PSEUDOCODE_BANK_URL}/grade`, {
+                ...window.authOptions,
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    question_id: currentPseudo.question_id,
+                    level: currentPseudo.level,
+                    pseudocode: code
+                })
+            });
+
+            const data = await res.json().catch(() => ({}));
+
+            if (!res.ok || !data.success) {
+                const msg = data.message || "Checker failed.";
+                feedback.style.color = "#ef4444";
+                feedback.textContent = `❌ ${msg}`;
+                if (output) output.textContent = `Server error: ${msg}`;
+                return;
+            }
+
+            if (data.passed) {
+                feedback.style.color = "#10b981";
+                feedback.textContent = "✅ Correct (meets the prompt requirements).";
+                if (output) {
+                    output.textContent =
+                        `PASS ✅\n` +
+                        `Question: ${data.question_id} (${data.level})\n` +
+                        `${data.notes}`;
+                }
+                nextBtn.disabled = false;
+                nextBtn.style.opacity = "1";
+            } else {
+                feedback.style.color = "#fbbf24";
+                feedback.textContent = "⚠️ Not quite. Fix what’s missing and check again.";
+                if (output) {
+                    const missingList = (data.missing || []).map(m => `- ${m}`).join("\n");
+                    output.textContent =
+                        `FAIL ❌\n` +
+                        `Missing:\n${missingList}\n\n` +
+                        `Tip: Add the missing parts, then re-check.`;
+                }
+                nextBtn.disabled = true;
+                nextBtn.style.opacity = "0.5";
+            }
+        } catch (err) {
+            console.error(err);
+            feedback.style.color = "#ef4444";
+            feedback.textContent = "❌ Error connecting to checker.";
+            if (output) output.textContent = "Network error calling /api/pseudocode_bank/grade";
+        }
     }
+
 
 
     function renderMCQ() {
