@@ -1,7 +1,7 @@
 ---
 layout: default
 title: Character Selection Protocol
-permalink: /learninggame/character
+permalink: 
 ---
 
 <style>
