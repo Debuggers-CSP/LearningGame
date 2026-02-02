@@ -316,10 +316,24 @@ permalink: /learninggame/home
     import { getRobopURI, fetchOptions } from '{{ "/assets/js/api/config.js" | relative_url }}?v=20260123_1';
 
     const robopURI = await getRobopURI();
+
+    // Existing robop endpoints (used by autofill)
     const API_URL = `${robopURI}/api/robop`;
-    
+
+    // NEW pseudocode question bank endpoints
+    const PSEUDOCODE_BANK_URL = `${robopURI}/api/pseudocode_bank`;
+
     window.API_URL = API_URL;
+    window.PSEUDOCODE_BANK_URL = PSEUDOCODE_BANK_URL;
     window.authOptions = fetchOptions;
+
+    // Track the currently fetched pseudocode question (per sector run)
+    let currentPseudo = {
+        level: null,
+        question_id: null,
+        question: null
+    };
+
 
     // Star Field Initialization
     const starsContainer = document.getElementById('stars');
@@ -345,6 +359,7 @@ permalink: /learninggame/home
     let currentSectorNum = 0;
     let currentQuestion = 0;
     const completedSectors = new Set();
+    let usedAutofill = false; // Track if autofill was used
 
     const mazeLayout = [
         [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
@@ -640,30 +655,86 @@ permalink: /learninggame/home
         });
     }
 
-    autofillBtn.onclick = () => {
-        feedback.textContent = '✨ Autofill active in full game version';
-        feedback.style.color = '#a855f7';
+    // AUTOFILL FUNCTIONALITY
+    autofillBtn.onclick = async () => {
+        try {
+            usedAutofill = true; // Mark that autofill was used
+            feedback.textContent = '⏳ Fetching answer...';
+            feedback.style.color = '#06b6d4';
+            
+            const response = await fetch(`${window.API_URL}/autofill`, {
+                ...window.authOptions,
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    sector_id: currentSectorNum,
+                    question_num: currentQuestion
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to fetch answer');
+            }
+
+            const data = await response.json();
+            
+            if (data.success) {
+                if (currentQuestion === 0) {
+                    document.getElementById('rcInput').value = data.answer;
+                    feedback.textContent = '✨ Answer filled! Click "Execute Command" to run.';
+                    feedback.style.color = '#a855f7';
+                } else if (currentQuestion === 1) {
+                    document.getElementById('pcCode').value = data.answer;
+                    feedback.textContent = '✨ Answer filled! Click "Validate" to check.';
+                    feedback.style.color = '#a855f7';
+                } else if (currentQuestion === 2) {
+                    const buttons = mContent.querySelectorAll('.btn');
+                    if (buttons[data.answer]) {
+                        buttons[data.answer].click();
+                        feedback.textContent = '✨ Correct answer selected!';
+                        feedback.style.color = '#10b981';
+                    }
+                }
+            } else {
+                feedback.textContent = '❌ ' + (data.message || 'Failed to get answer');
+                feedback.style.color = '#ef4444';
+            }
+        } catch (error) {
+            console.error('Autofill error:', error);
+            feedback.textContent = '❌ Error connecting to server';
+            feedback.style.color = '#ef4444';
+        }
     };
 
-    backBtn.onclick = () => {
-        let weightedSum = 0;
-        const pts = moduleAttempts.map(a => Math.max(1, 6 - a));
-        for (let i=0; i<3; i++) weightedSum += (pts[i]/5) * weights[i];
-        const finalScore = weightedSum * 100;
-        const badgeRules = [{name: "Gold", threshold: 95}, {name: "Silver", threshold: 80}, {name: "Bronze", threshold: 65}, {name: "Participant", threshold: 0}];
-        let earnedBadge = "Participant";
-        for (let r of badgeRules) { 
-            if (finalScore >= r.threshold) { 
-                earnedBadge = r.name; 
-                break; 
-            } 
+    backBtn.onclick = async () => {
+        let finalScore, earnedBadge;
+        
+        if (usedAutofill) {
+            // If autofill was used, automatically give 0 score and Participant badge
+            finalScore = 0;
+            earnedBadge = "Participant";
+        } else {
+            // Normal scoring calculation
+            let weightedSum = 0;
+            const pts = moduleAttempts.map(a => Math.max(1, 6 - a));
+            for (let i=0; i<3; i++) weightedSum += (pts[i]/5) * weights[i];
+            finalScore = weightedSum * 100;
+            const badgeRules = [{name: "Gold", threshold: 95}, {name: "Silver", threshold: 80}, {name: "Bronze", threshold: 65}, {name: "Participant", threshold: 0}];
+            earnedBadge = "Participant";
+            for (let r of badgeRules) { 
+                if (finalScore >= r.threshold) { 
+                    earnedBadge = r.name; 
+                    break; 
+                } 
+            }
         }
         
         mContent.innerHTML = `
             <div class="summary-card">
                 <h3 style="color:#fbbf24; margin-bottom:10px;">SECTOR RESULTS</h3>
+                ${usedAutofill ? '<p style="color:#a855f7; margin-bottom:10px; text-align:center;">⚠️ Autofill was used - Participant badge awarded</p>' : ''}
                 <div class="summary-row"><span>Total Score:</span><span>${Math.round(finalScore)}%</span></div>
-                <div class="badge-display">${earnedBadge === "Gold" ? "🥇" : earnedBadge === "Silver" ? "🥈" : "🥉"}<div style="font-size:14px;">${earnedBadge} Badge</div></div>
+                <div class="badge-display">${earnedBadge === "Gold" ? "🥇" : earnedBadge === "Silver" ? "🥈" : earnedBadge === "Bronze" ? "🥉" : "🎖️"}<div style="font-size:14px;">${earnedBadge} Badge</div></div>
                 <button class="btn btn-blue" id="finalCloseBtn" style="width:100%">Continue</button>
             </div>`;
         document.getElementById('finalCloseBtn').onclick = closeSector;
@@ -692,6 +763,7 @@ permalink: /learninggame/home
                 currentSectorNum = sNum; 
                 currentQuestion = 0; 
                 moduleAttempts = [0, 0, 0];
+                usedAutofill = false; // Reset autofill flag for new sector
                 setTimeout(() => { 
                     modal.classList.add('active'); 
                     showQuestion(); 
