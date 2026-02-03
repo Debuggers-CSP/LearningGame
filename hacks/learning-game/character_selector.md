@@ -242,28 +242,48 @@ document.getElementById('submit-btn').addEventListener('click', function() {
     
     errorMessage.style.display = 'none';
     
-    // I/O: Send data to server (simulated)
-    console.log(`Character Selected: ${characterName} - Class: ${selectedCharacter}`);
-    
-    // In production, this would be:
-    // fetch('/api/update_character', {
-    //     method: 'POST',
-    //     headers: { 'Content-Type': 'application/json' },
-    //     body: JSON.stringify({ name: characterName, class: selectedCharacter })
-    // }).then(response => response.json()).then(data => {
-    //     if (data.success) {
-    //         // Redirect or display success
-    //     }
-    // });
-    
-    // For now, show success and redirect
-    this.textContent = "✓ Profile Created!";
+    // Disable button during submission
     this.disabled = true;
-    this.style.background = 'linear-gradient(135deg, #10b981, #059669)';
+    this.textContent = "Saving...";
     
-    setTimeout(() => {
-        window.location.href = "{{ '/learninggame/home' | relative_url }}";
-    }, 1500);
+    // Generate or retrieve player ID (stored in session/localStorage)
+    let playerId = localStorage.getItem('playerId');
+    if (!playerId) {
+        playerId = 'player_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+        localStorage.setItem('playerId', playerId);
+    }
+    
+    // I/O: Send data to backend server
+    fetch('http://localhost:3000/player/' + playerId + '/character', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+            displayName: characterName, 
+            characterClass: selectedCharacter 
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            console.log('Character saved:', data.player);
+            // Show success and redirect
+            this.textContent = "✓ Profile Created!";
+            this.style.background = 'linear-gradient(135deg, #10b981, #059669)';
+            
+            setTimeout(() => {
+                window.location.href = "{{ '/learninggame/home' | relative_url }}";
+            }, 1500);
+        } else {
+            throw new Error(data.error || 'Failed to save character');
+        }
+    })
+    .catch(error => {
+        console.error('Error saving character:', error);
+        errorMessage.textContent = "❌ Failed to save character: " + error.message;
+        errorMessage.style.display = 'block';
+        this.disabled = false;
+        this.textContent = "Ready to Enter Maze →";
+    });
 });
 
 // Initialize on page load

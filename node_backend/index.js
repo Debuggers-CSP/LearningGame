@@ -20,6 +20,7 @@ db.serialize(() => {
   db.run(`CREATE TABLE IF NOT EXISTS players (
     id TEXT PRIMARY KEY,
     display_name TEXT,
+    character_class TEXT,
     created_at TEXT DEFAULT (datetime('now'))
   )`);
   db.run(`CREATE TABLE IF NOT EXISTS stop_progress (
@@ -107,7 +108,7 @@ app.get("/player/:id", async (req, res) => {
     const { id } = req.params;
     await ensurePlayer(id);
 
-    const player = await get("SELECT id, display_name, created_at FROM players WHERE id = ?", [id]);
+    const player = await get("SELECT id, display_name, character_class, created_at FROM players WHERE id = ?", [id]);
     const progress = await all(
       "SELECT stop_id AS stopId, attempts, score, completed_at AS completedAt FROM stop_progress WHERE player_id = ? ORDER BY stop_id",
       [id]
@@ -120,6 +121,30 @@ app.get("/player/:id", async (req, res) => {
     res.json({ player, progress, finalAnswer: finalAnswer || null });
   } catch (err) {
     res.status(500).json({ error: "Failed to load player data.", details: err.message });
+  }
+});
+
+app.post("/player/:id/character", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { displayName, characterClass } = req.body || {};
+
+    if (!displayName || !characterClass) {
+      return res.status(400).json({ error: "displayName and characterClass are required." });
+    }
+
+    await ensurePlayer(id, displayName);
+    const updatedAt = new Date().toISOString();
+
+    await run(
+      `UPDATE players SET display_name = ?, character_class = ? WHERE id = ?`,
+      [displayName, characterClass, id]
+    );
+
+    const player = await get("SELECT id, display_name, character_class, created_at FROM players WHERE id = ?", [id]);
+    res.json({ success: true, player, updatedAt });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to save character selection.", details: err.message });
   }
 });
 
