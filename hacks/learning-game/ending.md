@@ -812,10 +812,29 @@ You continue looping until there are no actions left. When the loop ends, you ou
       bubble.textContent = text;
       chatLog.appendChild(bubble);
       chatLog.scrollTop = chatLog.scrollHeight;
+      return bubble;
     }
 
-    const GEMINI_API_KEY = window.GEMINI_API_KEY || 'AIzaSyA9IdSK4fMKRC0PSpm3BaoCBJRH2htIc4c';
-    const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${GEMINI_API_KEY}`;
+    function appendChatVisual(svgMarkup) {
+      if (!svgMarkup) return;
+      const bubble = document.createElement('div');
+      bubble.className = 'chat-bubble chat-ai';
+      bubble.innerHTML = svgMarkup;
+      const svg = bubble.querySelector('svg');
+      if (svg) {
+        svg.style.maxWidth = '100%';
+        svg.style.height = 'auto';
+        svg.style.display = 'block';
+        svg.style.borderRadius = '10px';
+        svg.style.border = '1px solid rgba(59, 130, 246, 0.5)';
+      }
+      chatLog.appendChild(bubble);
+      chatLog.scrollTop = chatLog.scrollHeight;
+    }
+
+    const OPENAI_API_KEY = window.OPENAI_API_KEY || '';
+    const OPENAI_API_URL = 'https://api.openai.com/v1/chat/completions';
+    const OPENAI_MODEL = window.OPENAI_MODEL || 'gpt-4o-mini';
     const MAX_CHAT_TURNS = 8;
     const chatHistory = [];
 
@@ -845,38 +864,87 @@ You continue looping until there are no actions left. When the loop ends, you ou
     let aiFallbackIndex = 0;
     const aiFallbacks = [
       'Tell me your goal in one sentence (e.g., "count safe steps" or "calculate score"). I will break it into steps.',
-      'Try this structure: define inputs → loop through steps → decide with if/else → update result → return.',
+      'Use this flow: define inputs → loop through actions → decide with if/else → update result → return/output. I will show a visual too.',
       'Share the parts you already have (function, loop, conditional). I will fill the missing piece.',
       'If you want an example, I can give a pseudo-code outline without full code.'
     ];
 
+    function buildFlowVisual() {
+      return `
+        <svg xmlns="http://www.w3.org/2000/svg" width="520" height="180" viewBox="0 0 520 180">
+          <rect width="520" height="180" rx="12" fill="#0f172a"/>
+          <g fill="#93c5fd" font-family="Segoe UI, sans-serif" font-size="12">
+            <text x="20" y="35">Define inputs</text>
+            <text x="150" y="35">Loop actions</text>
+            <text x="270" y="35">If / else</text>
+            <text x="380" y="35">Update result</text>
+            <text x="470" y="35">Return</text>
+          </g>
+          <g fill="#1e293b" stroke="#60a5fa" stroke-width="1.5">
+            <rect x="15" y="50" width="100" height="40" rx="8" />
+            <rect x="135" y="50" width="100" height="40" rx="8" />
+            <rect x="255" y="50" width="100" height="40" rx="8" />
+            <rect x="375" y="50" width="100" height="40" rx="8" />
+            <rect x="455" y="50" width="55" height="40" rx="8" />
+          </g>
+          <g stroke="#60a5fa" stroke-width="2" marker-end="url(#arrow)">
+            <line x1="115" y1="70" x2="135" y2="70" />
+            <line x1="235" y1="70" x2="255" y2="70" />
+            <line x1="355" y1="70" x2="375" y2="70" />
+            <line x1="475" y1="70" x2="455" y2="70" />
+          </g>
+          <defs>
+            <marker id="arrow" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto">
+              <path d="M0,0 L8,4 L0,8 Z" fill="#60a5fa" />
+            </marker>
+          </defs>
+        </svg>
+      `;
+    }
+
+    function shouldShowFlowVisual(text) {
+      const t = String(text || '').toLowerCase();
+      const hasInputs = t.includes('define inputs') || t.includes('inputs');
+      const hasLoop = t.includes('loop') || t.includes('iterate');
+      const hasConditional = t.includes('if/else') || t.includes('if else') || t.includes('if / else') || t.includes('conditional');
+      const hasReturn = t.includes('return') || t.includes('output');
+      const score = [hasInputs, hasLoop, hasConditional, hasReturn].filter(Boolean).length;
+      return score >= 3;
+    }
+
+    function shouldShowVisualForPrompt(userText) {
+      const t = String(userText || '').toLowerCase();
+      return t.includes('image') || t.includes('visual') || t.includes('diagram') || t.includes('i need help') || t.includes("i'm stuck") || t.includes('im stuck');
+    }
+
     function aiFallbackReply(userText) {
       const text = String(userText || '').toLowerCase();
       if (text.includes('example') || text.includes('code')) {
-        return 'I can’t give full code, but here’s a safe outline: function name + inputs → loop through items → if/else decision → update a result → return it.';
+        return { text: 'I can’t give full code, but here’s a safe outline: function name + inputs → loop through items → if/else decision → update a result → return it.', visual: buildFlowVisual() };
       }
       if (text.includes('loop')) {
-        return 'Pick a loop type (for/while). Decide what repeats and when to stop. Example: repeat for each step in a list.';
+        return { text: 'Pick a loop type (for/while). Decide what repeats and when to stop. Example: repeat for each step in a list.', visual: null };
       }
       if (text.includes('if') || text.includes('condition')) {
-        return 'Use if/else to choose between two actions. Write the condition in plain English first, then translate it.';
+        return { text: 'Use if/else to choose between two actions. Write the condition in plain English first, then translate it.', visual: null };
       }
       if (text.includes('function')) {
-        return 'Start with a clear function name and inputs. Then add the loop and decision logic inside.';
+        return { text: 'Start with a clear function name and inputs. Then add the loop and decision logic inside.', visual: null };
       }
       if (text.includes('score') || text.includes('result')) {
-        return 'Create a result variable before the loop, update it inside, and return it after the loop.';
+        return { text: 'Create a result variable before the loop, update it inside, and return it after the loop.', visual: null };
       }
       if (text.includes('help') || text.includes('hint')) {
-        return 'Tell me which part is missing: function, loop, or conditional. I will guide just that part.';
+        return { text: 'Tell me which part is missing: function, loop, or conditional. I will guide just that part.', visual: null };
       }
       const reply = aiFallbacks[aiFallbackIndex % aiFallbacks.length];
       aiFallbackIndex += 1;
-      return reply;
+      const visual = reply.includes('Use this flow') ? buildFlowVisual() : null;
+      return { text: reply, visual };
     }
 
     async function aiReply(userText) {
-      if (!GEMINI_API_KEY) {
+      if (!OPENAI_API_KEY) {
         return aiFallbackReply(userText);
       }
 
@@ -891,30 +959,35 @@ You continue looping until there are no actions left. When the loop ends, you ou
       ].join(' ');
 
       const context = buildChatContext();
-      const contents = [
-        { role: 'user', parts: [{ text: `${systemPrompt}\n\nContext:\n${context}` }] },
-        ...chatHistory.map(item => ({ role: item.role, parts: [{ text: item.text }] }))
+      const messages = [
+        { role: 'system', content: `${systemPrompt}\n\nContext:\n${context}` },
+        ...chatHistory.map(item => ({
+          role: item.role === 'model' ? 'assistant' : item.role,
+          content: item.text
+        }))
       ];
 
-      const response = await fetch(GEMINI_API_URL, {
+      const response = await fetch(OPENAI_API_URL, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${OPENAI_API_KEY}`
+        },
         body: JSON.stringify({
-          contents,
-          generationConfig: {
-            temperature: 0.6,
-            maxOutputTokens: 240
-          }
+          model: OPENAI_MODEL,
+          messages,
+          temperature: 0.6,
+          max_tokens: 240
         })
       });
 
       if (!response.ok) {
-        throw new Error(`Gemini error: ${response.status}`);
+        throw new Error(`ChatGPT error: ${response.status}`);
       }
 
       const data = await response.json();
-      const reply = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-      return reply || aiFallbackReply(userText);
+      const reply = data?.choices?.[0]?.message?.content;
+      return { text: reply || aiFallbackReply(userText).text, visual: null };
     }
 
     async function refreshScore() {
@@ -1062,12 +1135,22 @@ You continue looping until there are no actions left. When the loop ends, you ou
       try {
         addChatHistory('user', message);
         const typingBubble = appendChatBubble('Thinking...', 'chat-ai');
-        const reply = await aiReply(message);
-        addChatHistory('model', reply);
-        typingBubble.textContent = reply;
+        const replyObj = await aiReply(message);
+        const replyText = typeof replyObj === 'string' ? replyObj : replyObj.text;
+        const replyVisual = typeof replyObj === 'string' ? null : replyObj.visual;
+        addChatHistory('assistant', replyText);
+        typingBubble.textContent = replyText;
+        if (replyVisual) {
+          appendChatVisual(replyVisual);
+        } else if (shouldShowFlowVisual(replyText) || shouldShowVisualForPrompt(message)) {
+          appendChatVisual(buildFlowVisual());
+        }
       } catch (e) {
-        const fallback = aiFallbackReply(message);
-        appendChatBubble(fallback, 'chat-ai');
+        const fallbackObj = aiFallbackReply(message);
+        appendChatBubble(fallbackObj.text, 'chat-ai');
+        if (fallbackObj.visual) {
+          appendChatVisual(fallbackObj.visual);
+        }
       }
     }
 
