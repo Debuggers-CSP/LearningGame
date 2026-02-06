@@ -1637,9 +1637,9 @@ permalink: /learninggame/home-ai
         }
     }
 
-    nextBtn.onclick = () => { 
-        currentQuestion++; 
-        showQuestion(); 
+    nextBtn.onclick = () => {
+        currentQuestion++;
+        showQuestion();
         updateBotIconVisibility();
     };
 
@@ -1650,19 +1650,10 @@ permalink: /learninggame/home-ai
         if (e.key === 'ArrowLeft') movePlayer(-1, 0);
         if (e.key === 'ArrowRight') movePlayer(1, 0);
     });
-        // Event Listeners for AI Assistant
-    helpBotIcon.addEventListener('click', showHint);
-    prevHintBtn.addEventListener('click', prevHint);
-    nextHintBtn.addEventListener('click', nextHint);
-    closeHintBtn.addEventListener('click', closeHint);
 
-    // Close hint overlay when clicking outside
-    hintOverlay.addEventListener('click', (e) => {
-        if (e.target === hintOverlay) {
-            closeHint();
-        }
-    });
-    // Initialize
     drawMaze();
     updateProgressBar();
-    updateBotIconVisibility(); 
+    updateBotIconVisibility();
+</script>
+</body>
+</html> 
