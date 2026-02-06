@@ -419,6 +419,60 @@ permalink: /learninggame/home
         color: #e2e8f0;
         border: 1px solid #4b5563;
     }
+
+    /* Sector Module Progress (Robot / Pseudocode / MCQ) */
+        .sector-progress {
+            display: flex;
+            gap: 10px;
+            margin: 10px 0 18px 0;
+        }
+
+        .sector-step {
+            flex: 1;
+            position: relative;
+            padding: 10px 12px;
+            border-radius: 14px;
+            border: 1px solid rgba(6,182,212,0.25);
+            background: rgba(2,6,23,0.5);
+            color: rgba(103,232,249,0.65);
+            font-family: 'Courier New', monospace;
+            font-size: 11px;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        .sector-step::before {
+            content: "";
+            position: absolute;
+            left: 0; top: 0; bottom: 0;
+            width: 0%;
+            background: linear-gradient(90deg, rgba(16,185,129,0.35), rgba(6,182,212,0.25));
+            transition: width 220ms ease;
+        }
+
+        .sector-step.active {
+            color: #e2e8f0;
+            border-color: rgba(16,185,129,0.55);
+            box-shadow: 0 0 16px rgba(16,185,129,0.18);
+        }
+
+        .sector-step.active::before { width: 100%; }
+
+        .sector-step.completed {
+            color: #e2e8f0;
+            border-color: rgba(16,185,129,0.55);
+        }
+
+        .sector-step.completed::before { width: 100%; }
+
+        .sector-step span {
+            position: relative; /* keep text above the ::before fill */
+            z-index: 1;
+        }
     </style>
 
 </head>
@@ -487,6 +541,12 @@ permalink: /learninggame/home
                         <h2 id="mTitle" style="color: #06b6d4; text-transform: uppercase;">Sector 1</h2>
                         <p id="mSubtitle" style="color: rgba(103,232,249,0.7); font-family: monospace; font-size: 12px;">Navigation Task</p>
                     </div>
+                </div>
+                <!-- Sector Module Progress -->
+                <div class="sector-progress" id="sectorProgress">
+                <div class="sector-step" data-step="0"><span>Robot Code</span></div>
+                <div class="sector-step" data-step="1"><span>Pseudocode</span></div>
+                <div class="sector-step" data-step="2"><span>MCQ</span></div>
                 </div>
 
                 <div id="moduleContent"></div>
@@ -882,6 +942,7 @@ permalink: /learninggame/home
         feedback.textContent = '';
         nextBtn.disabled = true;
         nextBtn.style.opacity = "0.5";
+        updateSectorModuleProgress();
 
         if (currentQuestion === 0) renderRobotSim();
         else if (currentQuestion === 1) await renderPseudoCode();
@@ -969,6 +1030,17 @@ permalink: /learninggame/home
                 grid.appendChild(c);
             }
         }
+    }
+
+    function updateSectorModuleProgress() {
+        const steps = document.querySelectorAll('#sectorProgress .sector-step');
+        steps.forEach((el) => {
+            const step = Number(el.dataset.step);
+            el.classList.remove('active', 'completed');
+
+            if (step < currentQuestion) el.classList.add('completed');
+            if (step === currentQuestion) el.classList.add('active');
+        });
     }
 
     async function fetchRandomPseudocodeQuestion(levelNum) {
