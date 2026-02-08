@@ -76,6 +76,16 @@ disable_login_script: true
     .status.ok { color: #22c55e; }
     .status.err { color: #f87171; }
     .locked { opacity: 0.5; pointer-events: none; }
+    .chat-panel { display: flex; flex-direction: column; gap: 10px; }
+    .chat-log { min-height: 180px; max-height: 260px; overflow-y: auto; background: rgba(2, 6, 23, 0.6); border: 1px solid rgba(148, 163, 184, 0.25); border-radius: 12px; padding: 12px; display: flex; flex-direction: column; gap: 8px; font-size: 13px; }
+    .chat-bubble { padding: 8px 10px; border-radius: 10px; max-width: 90%; line-height: 1.4; }
+    .chat-user { background: rgba(59, 130, 246, 0.2); border: 1px solid rgba(59, 130, 246, 0.4); align-self: flex-end; color: #bfdbfe; }
+    .chat-ai { background: rgba(16, 185, 129, 0.18); border: 1px solid rgba(16, 185, 129, 0.35); align-self: flex-start; color: #bbf7d0; white-space: pre-line; }
+    .chat-input { display: flex; gap: 8px; }
+    .chat-input input { flex: 1; background: #0f172a; color: #e2e8f0; border: 1px solid rgba(59, 130, 246, 0.4); border-radius: 10px; padding: 10px 12px; font-size: 13px; }
+    .role-badges { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0 12px; }
+    .role-badge { font-size: 12px; padding: 6px 10px; border-radius: 999px; border: 1px solid rgba(148, 163, 184, 0.35); background: rgba(30, 41, 59, 0.7); color: #e2e8f0; cursor: pointer; }
+    .role-badge.active { border-color: rgba(16, 185, 129, 0.6); box-shadow: 0 0 10px rgba(16, 185, 129, 0.3); background: rgba(16, 185, 129, 0.2); color: #d1fae5; }
   </style>
 </head>
 <body>
@@ -126,6 +136,26 @@ disable_login_script: true
           <div class="status" id="debugStatus"></div>
         </div>
       </div>
+
+      <div class="card" style="grid-column: 1 / -1;">
+        <h3>💬 Hint Coach Chatbot</h3>
+        <p class="helper-text">Pick a helper role so you get the right type of feedback without full solutions.</p>
+        <div class="role-badges" id="chatRoles">
+          <button type="button" class="role-badge" data-role="hint">Hint Coach</button>
+          <button type="button" class="role-badge" data-role="debugger">Debugger</button>
+          <button type="button" class="role-badge" data-role="teacher">Teacher</button>
+          <button type="button" class="role-badge" data-role="checker">Checker</button>
+        </div>
+        <div class="chat-panel">
+          <div class="chat-log" id="chatLog">
+            <div class="chat-bubble chat-ai">Hint Coach: Tell me the level and what you think the bug is.</div>
+          </div>
+          <div class="chat-input">
+            <input id="chatInput" type="text" placeholder="Ask for help (e.g., 'Where is the bug?')" />
+            <button class="btn btn-primary" id="sendChat">Send</button>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -145,6 +175,10 @@ disable_login_script: true
       var submitDebug = byId('submitDebug');
       var clearDebug = byId('clearDebug');
       var debugChallengeCard = byId('debugChallengeCard');
+      var chatRoles = byId('chatRoles');
+      var chatLog = byId('chatLog');
+      var chatInput = byId('chatInput');
+      var sendChat = byId('sendChat');
 
       var DEBUG_PROBLEMS = {
         beginner: [
@@ -264,6 +298,39 @@ disable_login_script: true
         renderDebugBadges();
       }
 
+      function appendChatBubble(text, type) {
+        var bubble = document.createElement('div');
+        bubble.className = 'chat-bubble ' + type;
+        bubble.textContent = text;
+        chatLog.appendChild(bubble);
+        chatLog.scrollTop = chatLog.scrollHeight;
+      }
+
+      var currentChatRole = 'hint';
+      function rolePrefix(role) {
+        if (role === 'debugger') return 'Debugger:';
+        if (role === 'teacher') return 'Teacher:';
+        if (role === 'checker') return 'Checker:';
+        return 'Hint Coach:';
+      }
+
+      function chatbotReply(message) {
+        var text = String(message || '').toLowerCase();
+        if (currentChatRole === 'debugger') {
+          return rolePrefix(currentChatRole) + ' Point to the exact line where the logic breaks and say why.';
+        }
+        if (currentChatRole === 'teacher') {
+          return rolePrefix(currentChatRole) + ' In simple terms: programs run top-to-bottom, loops repeat, and if/else chooses.';
+        }
+        if (currentChatRole === 'checker') {
+          return rolePrefix(currentChatRole) + ' Tell me the expected output and your fix in one sentence, and I will confirm.';
+        }
+        if (text.indexOf('loop') >= 0) return rolePrefix(currentChatRole) + ' Check the loop bounds and the first index.';
+        if (text.indexOf('syntax') >= 0) return rolePrefix(currentChatRole) + ' Look for a missing colon or mismatched quote.';
+        if (text.indexOf('empty') >= 0) return rolePrefix(currentChatRole) + ' Add a guard for empty lists before dividing.';
+        return rolePrefix(currentChatRole) + ' Describe the bug in one sentence and your fix in one sentence.';
+      }
+
       for (var i = 0; i < debugLevelButtons.length; i += 1) {
         debugLevelButtons[i].addEventListener('click', function (event) {
           selectedDebugLevel = event.currentTarget.dataset.level || '';
@@ -311,58 +378,35 @@ disable_login_script: true
         });
       }
 
+      if (chatRoles) {
+        var roleButtons = chatRoles.querySelectorAll('[data-role]');
+        for (var r = 0; r < roleButtons.length; r += 1) {
+          roleButtons[r].addEventListener('click', function (event) {
+            currentChatRole = event.currentTarget.dataset.role || 'hint';
+            for (var j = 0; j < roleButtons.length; j += 1) {
+              if (roleButtons[j].dataset.role === currentChatRole) roleButtons[j].classList.add('active');
+              else roleButtons[j].classList.remove('active');
+            }
+          });
+        }
+        roleButtons[0].classList.add('active');
+      }
+
+      if (sendChat) {
+        sendChat.addEventListener('click', function () {
+          var message = chatInput.value.trim();
+          if (!message) return;
+          appendChatBubble(message, 'chat-user');
+          chatInput.value = '';
+          appendChatBubble(chatbotReply(message), 'chat-ai');
+        });
+      }
+
       updateLevelStatus();
       renderDebugBadges();
       setDebugLockState(true);
       setDebugProblem(null);
     })();
-  </script>
-</body>
-</html>
-          : null;
-        const newPlayerId = `player-${safeCrypto ? safeCrypto.randomUUID() : Date.now()}`;
-        localStorage.setItem('learninggame_player_id', newPlayerId);
-        
-        // Redirect to game start
-        window.location.href = '{{ "/learninggame/home" | relative_url }}';
-      }
-    });
-
-    function forceScroll() {
-      const html = document.documentElement;
-      if (html) {
-        html.style.setProperty('overflow-y', 'auto', 'important');
-        html.style.setProperty('overflow-x', 'hidden', 'important');
-        html.style.setProperty('height', 'auto', 'important');
-        html.style.setProperty('max-height', 'none', 'important');
-      }
-      if (document.body) {
-        document.body.style.setProperty('overflow-y', 'auto', 'important');
-        document.body.style.setProperty('overflow-x', 'hidden', 'important');
-        document.body.style.setProperty('height', 'auto', 'important');
-        document.body.style.setProperty('max-height', 'none', 'important');
-        document.body.style.setProperty('position', 'static', 'important');
-      }
-    }
-
-    forceScroll();
-    window.addEventListener('load', forceScroll);
-    const scrollFixInterval = setInterval(forceScroll, 500);
-    setTimeout(() => clearInterval(scrollFixInterval), 4000);
-
-    updateLevelStatus();
-    renderDebugBadges();
-    setDebugLockState(true);
-    setDebugProblem(null);
-
-    loadData();
-    
-    };
-    if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', init);
-    } else {
-      init();
-    }
   </script>
 </body>
 </html>
