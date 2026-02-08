@@ -12,3 +12,4 @@ mammoth
 pillow
 python-docx
 markdownify
+Flask

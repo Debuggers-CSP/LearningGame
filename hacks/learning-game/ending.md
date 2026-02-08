@@ -6,12 +6,7 @@ permalink: /learninggame/ending/
 disable_login_script: true
 ---
 
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Mission Complete</title>
-  <style>
+<style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -87,8 +82,6 @@ disable_login_script: true
     .role-badge { font-size: 12px; padding: 6px 10px; border-radius: 999px; border: 1px solid rgba(148, 163, 184, 0.35); background: rgba(30, 41, 59, 0.7); color: #e2e8f0; cursor: pointer; }
     .role-badge.active { border-color: rgba(16, 185, 129, 0.6); box-shadow: 0 0 10px rgba(16, 185, 129, 0.3); background: rgba(16, 185, 129, 0.2); color: #d1fae5; }
   </style>
-</head>
-<body>
   <div class="end-container">
     <div class="header">
       <div>
@@ -127,8 +120,9 @@ disable_login_script: true
         <div class="helper-text" id="debugProblemTitle">Select a level, then click Start Challenge to load your problem.</div>
         <pre class="code-block" id="debugCode">No problem loaded yet.</pre>
         <div class="helper-text" id="debugPrompt"></div>
+        <div class="helper-text">Paste corrected code only. Sentences will be rejected.</div>
         <div>
-          <textarea id="debugAnswer" placeholder="Describe the bug and your fix... (no full solution required)"></textarea>
+          <textarea id="debugAnswer" placeholder="Paste corrected code here..."></textarea>
           <div class="btn-row">
             <button class="btn btn-primary" id="submitDebug">Submit Fix</button>
             <button class="btn btn-ghost" id="clearDebug">Clear</button>
@@ -139,22 +133,22 @@ disable_login_script: true
 
       <div class="card" style="grid-column: 1 / -1;">
         <h3>💬 Hint Coach Chatbot</h3>
-        <p class="helper-text">Pick a helper role so you get the right type of feedback without full solutions.</p>
-        <div class="role-badges" id="chatRoles">
-          <button type="button" class="role-badge" data-role="hint">Hint Coach</button>
-          <button type="button" class="role-badge" data-role="debugger">Debugger</button>
-          <button type="button" class="role-badge" data-role="teacher">Teacher</button>
-          <button type="button" class="role-badge" data-role="checker">Checker</button>
-        </div>
+        <p class="helper-text">ChatGPT provides 3 short hints first, then reveals the answer. If you paste code, it can run it in a sandbox and report output.</p>
+        <p class="helper-text">Guardrail: The answer is revealed only after 3 hints.</p>
         <div class="chat-panel">
           <div class="chat-log" id="chatLog">
-            <div class="chat-bubble chat-ai">Hint Coach: Tell me the level and what you think the bug is.</div>
+            <div class="chat-bubble chat-ai">ChatGPT: Tell me the level and what you think the bug is.</div>
           </div>
           <div class="chat-input">
             <input id="chatInput" type="text" placeholder="Ask for help (e.g., 'Where is the bug?')" />
             <button class="btn btn-primary" id="sendChat">Send</button>
           </div>
         </div>
+      </div>
+
+      <div class="card" style="grid-column: 1 / -1;">
+        <h3>🔗 System Summary (Many-to-Many)</h3>
+        <p class="helper-text">One player can earn many badges, and one badge can be earned by many different players. That creates a many-to-many relationship, so a Player Badges table is used to track which players have earned which badges.</p>
       </div>
     </div>
   </div>
@@ -175,10 +169,17 @@ disable_login_script: true
       var submitDebug = byId('submitDebug');
       var clearDebug = byId('clearDebug');
       var debugChallengeCard = byId('debugChallengeCard');
-      var chatRoles = byId('chatRoles');
       var chatLog = byId('chatLog');
       var chatInput = byId('chatInput');
       var sendChat = byId('sendChat');
+
+      function safeGetItem(key, fallback) {
+        try { return localStorage.getItem(key); } catch (e) { return fallback; }
+      }
+
+      function safeSetItem(key, value) {
+        try { localStorage.setItem(key, value); } catch (e) { }
+      }
 
       var DEBUG_PROBLEMS = {
         beginner: [
@@ -186,8 +187,15 @@ disable_login_script: true
             id: 'b1',
             title: 'Beginner #1: Missing Colon',
             code: "def greet(name)\n    print('Hello ' + name)\n\ngreet('Ada')",
-            prompt: 'Fix the syntax error and explain what the corrected code does.',
-            expectedKeywords: ['colon', 'syntax', 'print', 'greet']
+            prompt: 'Fix the syntax error and paste the corrected code.',
+            expectedKeywords: ['colon', 'syntax', 'print', 'greet'],
+            expectedOutput: "Hello Ada",
+            hints: [
+              'Look at the function definition line for missing syntax.',
+              'Python needs a colon after function headers.',
+              'Make sure the print line is indented under the function.'
+            ],
+            answer: 'Add a colon after def greet(name): and keep the print line indented inside the function.'
           }
         ],
         intermediate: [
@@ -195,8 +203,15 @@ disable_login_script: true
             id: 'i1',
             title: 'Intermediate #1: Off-by-One Loop',
             code: "nums = [2, 4, 6, 8]\nfor i in range(0, len(nums)):\n    print(nums[i])\nprint('done')",
-            prompt: 'The loop should skip the first item and print only 4, 6, 8. Explain the fix.',
-            expectedKeywords: ['range', 'start', 'index', 'loop', 'skip']
+            prompt: 'The loop should skip the first item and print only 4, 6, 8. Paste corrected code.',
+            expectedKeywords: ['range', 'start', 'index', 'loop', 'skip'],
+            expectedOutput: "4\n6\n8\ndone",
+            hints: [
+              'The loop currently starts at index 0.',
+              'To skip the first item, start the range at 1.',
+              'Keep the end as len(nums) so you still include the last item.'
+            ],
+            answer: 'Change range(0, len(nums)) to range(1, len(nums)) so the loop skips index 0.'
           }
         ],
         hard: [
@@ -204,27 +219,34 @@ disable_login_script: true
             id: 'h1',
             title: 'Hard #1: Guard the Empty List',
             code: "def average(scores):\n    total = 0\n    for s in scores:\n        total += s\n    return total / len(scores)\n\nprint(average([]))",
-            prompt: 'Handle the empty-list edge case and explain why the fix prevents a crash.',
-            expectedKeywords: ['empty', 'len', 'zero', 'edge', 'return']
+            prompt: 'Handle the empty-list edge case and paste corrected code.',
+            expectedKeywords: ['empty', 'len', 'zero', 'edge', 'return'],
+            expectedOutput: "0",
+            hints: [
+              'Division by zero happens when the list is empty.',
+              'Check len(scores) before dividing.',
+              'Return 0 or None for the empty case.'
+            ],
+            answer: 'Add a guard: if not scores: return 0 (or None) before dividing by len(scores).'
           }
         ]
       };
 
-      var selectedDebugLevel = localStorage.getItem('learninggame_debug_level') || '';
+      var selectedDebugLevel = safeGetItem('learninggame_debug_level', '') || '';
       var debugStarted = false;
       var currentDebugProblem = null;
 
       function getDebugBadges() {
-        return JSON.parse(localStorage.getItem('learninggame_debug_badges') || '[]');
+        return JSON.parse(safeGetItem('learninggame_debug_badges', '[]') || '[]');
       }
 
       function saveDebugBadges(badges) {
-        localStorage.setItem('learninggame_debug_badges', JSON.stringify(badges));
+        safeSetItem('learninggame_debug_badges', JSON.stringify(badges));
       }
 
       function renderDebugBadges() {
         var badges = getDebugBadges();
-        badgeStatus.textContent = badges.length ? ('Badges: ' + badges.join(', ')) : 'Badges: none';
+        badgeStatus.textContent = badges.length ? ('Badges earned: ' + badges.length + ' (' + badges.join(', ') + ')') : 'Badges: none';
       }
 
       function updateLevelStatus() {
@@ -268,24 +290,19 @@ disable_login_script: true
           return;
         }
         debugStarted = true;
-        localStorage.setItem('learninggame_debug_level', selectedDebugLevel);
+        chatHintCount = 0;
+        safeSetItem('learninggame_debug_level', selectedDebugLevel);
         loadDebugProblem(selectedDebugLevel);
         setDebugLockState(false);
         debugStatus.className = 'status ok';
         debugStatus.textContent = 'Challenge started: ' + selectedDebugLevel + '.';
+        if (startDebug) startDebug.textContent = 'Restart Level';
       }
 
       function validateDebugAnswer(answer) {
         if (!currentDebugProblem) return false;
         var text = String(answer || '').toLowerCase();
-        var hits = 0;
-        var keywords = currentDebugProblem.expectedKeywords || [];
-        for (var i = 0; i < keywords.length; i += 1) {
-          if (text.indexOf(keywords[i]) >= 0) hits += 1;
-        }
-        if (selectedDebugLevel === 'beginner') return hits >= 2 && text.length > 30;
-        if (selectedDebugLevel === 'intermediate') return hits >= 2 && text.length > 40;
-        return hits >= 2 && text.length > 50;
+        return isLikelyCode(text);
       }
 
       function completeDebugLevel() {
@@ -306,29 +323,83 @@ disable_login_script: true
         chatLog.scrollTop = chatLog.scrollHeight;
       }
 
-      var currentChatRole = 'hint';
-      function rolePrefix(role) {
-        if (role === 'debugger') return 'Debugger:';
-        if (role === 'teacher') return 'Teacher:';
-        if (role === 'checker') return 'Checker:';
-        return 'Hint Coach:';
+      var currentChatRole = 'chatgpt';
+      var chatHintCount = 0;
+      function rolePrefix() {
+        return 'ChatGPT:';
+      }
+
+      function isLikelyCode(text) {
+        if (!text) return false;
+        var t = text.toLowerCase();
+        return (t.indexOf('def ') >= 0 || t.indexOf('print(') >= 0 || t.indexOf('for ') >= 0 || t.indexOf('return ') >= 0 || t.indexOf(':\n') >= 0);
+      }
+
+      function getHintOrAnswer() {
+        if (!currentDebugProblem) {
+          return rolePrefix() + ' Start a level and click Start Challenge so I can give hints.';
+        }
+        var hints = currentDebugProblem.hints || [];
+        if (chatHintCount < 3 && chatHintCount < hints.length) {
+          var hint = hints[chatHintCount];
+          chatHintCount += 1;
+          return rolePrefix() + ' Hint ' + chatHintCount + ' of 3: ' + hint;
+        }
+        return rolePrefix() + ' Answer: ' + (currentDebugProblem.answer || 'No answer available.');
+      }
+
+      function runPythonRequest(code, callback) {
+        fetch('http://127.0.0.1:5001/api/run-python', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ code: code })
+        })
+          .then(function (response) {
+            return response.json().then(function (data) {
+              return { ok: response.ok, data: data };
+            });
+          })
+          .then(function (result) {
+            if (!result.ok || !result.data) {
+              callback({ ok: false, error: 'Execution failed.' });
+              return;
+            }
+            if (!result.data.ok) {
+              callback({ ok: false, error: result.data.error || 'Execution failed.', data: result.data });
+              return;
+            }
+            callback({ ok: true, data: result.data });
+          })
+          .catch(function () {
+            callback({ ok: false, error: 'Failed to reach the Python runner.' });
+          });
+      }
+
+      function runPythonCode(code, callback) {
+        runPythonRequest(code, function (result) {
+          if (!result.ok) {
+            callback(rolePrefix() + ' ' + result.error);
+            return;
+          }
+          var stdout = result.data.stdout || '';
+          var stderr = result.data.stderr || '';
+          var replyParts = [];
+          if (stdout.trim()) replyParts.push('Output:\n' + stdout.trim());
+          if (stderr.trim()) replyParts.push('Error:\n' + stderr.trim());
+          if (!replyParts.length) replyParts.push('No output.');
+          callback(rolePrefix() + ' ' + replyParts.join('\n'));
+        });
       }
 
       function chatbotReply(message) {
         var text = String(message || '').toLowerCase();
-        if (currentChatRole === 'debugger') {
-          return rolePrefix(currentChatRole) + ' Point to the exact line where the logic breaks and say why.';
+        if (isLikelyCode(text)) {
+          return rolePrefix() + ' Running your code...';
         }
-        if (currentChatRole === 'teacher') {
-          return rolePrefix(currentChatRole) + ' In simple terms: programs run top-to-bottom, loops repeat, and if/else chooses.';
+        if (!selectedDebugLevel) {
+          return rolePrefix() + ' Select a level first, then ask for a hint.';
         }
-        if (currentChatRole === 'checker') {
-          return rolePrefix(currentChatRole) + ' Tell me the expected output and your fix in one sentence, and I will confirm.';
-        }
-        if (text.indexOf('loop') >= 0) return rolePrefix(currentChatRole) + ' Check the loop bounds and the first index.';
-        if (text.indexOf('syntax') >= 0) return rolePrefix(currentChatRole) + ' Look for a missing colon or mismatched quote.';
-        if (text.indexOf('empty') >= 0) return rolePrefix(currentChatRole) + ' Add a guard for empty lists before dividing.';
-        return rolePrefix(currentChatRole) + ' Describe the bug in one sentence and your fix in one sentence.';
+        return getHintOrAnswer();
       }
 
       for (var i = 0; i < debugLevelButtons.length; i += 1) {
@@ -338,8 +409,10 @@ disable_login_script: true
           debugStatus.className = 'status';
           debugStatus.textContent = '';
           debugStarted = false;
+          chatHintCount = 0;
           setDebugLockState(true);
           setDebugProblem(null);
+          if (startDebug) startDebug.textContent = 'Start Challenge';
         });
       }
 
@@ -355,18 +428,39 @@ disable_login_script: true
           var answer = (debugAnswer && debugAnswer.value) ? debugAnswer.value.trim() : '';
           if (!answer) {
             debugStatus.className = 'status err';
-            debugStatus.textContent = 'Enter your fix or explanation before submitting.';
+            debugStatus.textContent = 'Paste your corrected code before submitting.';
             return;
           }
-          var ok = validateDebugAnswer(answer);
-          if (ok) {
-            debugStatus.className = 'status ok';
-            debugStatus.textContent = 'Correct ✅ Badge earned for this level.';
-            completeDebugLevel();
-          } else {
+          if (!isLikelyCode(answer)) {
             debugStatus.className = 'status err';
-            debugStatus.textContent = 'Not quite. Add clearer debugging reasoning for this level.';
+            debugStatus.textContent = 'Code only. Please paste corrected Python code.';
+            return;
           }
+          debugStatus.className = 'status';
+          debugStatus.textContent = 'Running code...';
+          runPythonRequest(answer, function (result) {
+            if (!result.ok) {
+              debugStatus.className = 'status err';
+              debugStatus.textContent = result.error || 'Execution failed.';
+              return;
+            }
+            var stderr = result.data.stderr || '';
+            if (stderr.trim()) {
+              debugStatus.className = 'status err';
+              debugStatus.textContent = 'Error: ' + stderr.trim();
+              return;
+            }
+            var expected = currentDebugProblem && currentDebugProblem.expectedOutput ? String(currentDebugProblem.expectedOutput).trim() : '';
+            var actual = (result.data.stdout || '').trim();
+            if (expected && actual !== expected) {
+              debugStatus.className = 'status err';
+              debugStatus.textContent = 'Output mismatch. Expected:\n' + expected + '\nGot:\n' + (actual || '(no output)');
+              return;
+            }
+            debugStatus.className = 'status ok';
+            debugStatus.textContent = 'Correct ✅ Output matches. Badge earned for this level.';
+            completeDebugLevel();
+          });
         });
       }
 
@@ -378,26 +472,19 @@ disable_login_script: true
         });
       }
 
-      if (chatRoles) {
-        var roleButtons = chatRoles.querySelectorAll('[data-role]');
-        for (var r = 0; r < roleButtons.length; r += 1) {
-          roleButtons[r].addEventListener('click', function (event) {
-            currentChatRole = event.currentTarget.dataset.role || 'hint';
-            for (var j = 0; j < roleButtons.length; j += 1) {
-              if (roleButtons[j].dataset.role === currentChatRole) roleButtons[j].classList.add('active');
-              else roleButtons[j].classList.remove('active');
-            }
-          });
-        }
-        roleButtons[0].classList.add('active');
-      }
-
       if (sendChat) {
         sendChat.addEventListener('click', function () {
           var message = chatInput.value.trim();
           if (!message) return;
           appendChatBubble(message, 'chat-user');
           chatInput.value = '';
+          if (isLikelyCode(message)) {
+            appendChatBubble(chatbotReply(message), 'chat-ai');
+            runPythonCode(message, function (reply) {
+              appendChatBubble(reply, 'chat-ai');
+            });
+            return;
+          }
           appendChatBubble(chatbotReply(message), 'chat-ai');
         });
       }
@@ -407,6 +494,4 @@ disable_login_script: true
       setDebugLockState(true);
       setDebugProblem(null);
     })();
-  </script>
-</body>
-</html>
+</script>
