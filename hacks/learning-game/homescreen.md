@@ -1812,6 +1812,17 @@ permalink: /learninggame/home-ai
     };
 
     document.addEventListener('keydown', e => {
+        // --- SECRET SKIP BYPASS (SHIFT + S) ---
+        if (e.key === 'S' && e.shiftKey && modal.classList.contains('active')) {
+            awardBadge(currentSectorNum, currentQuestion);
+            nextBtn.disabled = false;
+            nextBtn.style.opacity = "1";
+            if (currentQuestion === 2) { backBtn.disabled = false; backBtn.style.opacity = "1"; }
+            feedback.textContent = "🤫 Secret Skip Activated";
+            feedback.style.color = "#a855f7";
+            return;
+        }
+
         if (modal.classList.contains('active')) return;
         if (e.key === 'ArrowUp') movePlayer(0, -1);
         if (e.key === 'ArrowDown') movePlayer(0, 1);
@@ -1826,4 +1837,4 @@ permalink: /learninggame/home-ai
     helpBotIcon.style.display = 'flex';
 </script>
 </body>
-</html> 
+</html>
