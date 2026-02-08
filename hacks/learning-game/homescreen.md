@@ -113,6 +113,25 @@ permalink: /learninggame/home-ai
         .title { color: #06b6d4; font-size: 24px; font-weight: 900; text-transform: uppercase; letter-spacing: 4px; }
         .subtitle { text-align: center; color: rgba(103,232,249,0.7); font-size: 12px; font-family: 'Courier New', monospace; }
 
+        /* Styling for badge counts (Lower Right corner) */
+        .badge-icon-small {
+            position: relative; /* Necessary for absolute positioning of the count */
+        }
+
+        .badge-count-tag {
+            position: absolute;
+            bottom: -4px;
+            right: -4px;
+            background: #ef4444;
+            color: white;
+            font-size: 9px;
+            padding: 1px 4px;
+            border-radius: 10px;
+            font-weight: bold;
+            border: 1px solid #0f172a;
+            line-height: 1;
+        }
+
         /* Progress Bar Styles */
         .progress-bar-container {
             background: rgba(2, 6, 23, 0.6);
@@ -973,21 +992,75 @@ permalink: /learninggame/home-ai
      * Procedure: updateBadgeUI()
      * Uses Iteration to update the icons in the progress bar area.
      */
-    function updateBadgeUI() {
-        if (badgesEarned.length === 0) return;
-        badgeShelf.innerHTML = ''; // Clear the empty placeholder
-        
-        // Iteration: Loop through the list of earned badges
-        badgesEarned.forEach(badgeId => {
-            const m = parseInt(badgeId.split('-M')[1]);
-            const el = document.createElement('div');
-            el.className = 'badge-icon-small';
-            el.textContent = badgeIcons[m];
-            el.title = badgeId;
-            badgeShelf.appendChild(el);
-        });
-    }
+   /**
+ * Procedure: updateBadgeUI()
+ * Satisfies AP CSP PT: Uses a List, Iteration, and Selection to process complex data.
+ */
+async function updateBadgeUI() {
+    try {
+        // 1. LIST: Fetching the list of badge objects from the backend
+        const response = await fetch(`${robopURI}/api/robop/fetch_badges`, window.authOptions);
+        if (!response.ok) return;
+        const badges = await response.json(); // This is our List
 
+        badgeShelf.innerHTML = ''; // Clear placeholder
+
+        // 2. DATA STORAGE: Object to store counts for grouping
+        // Mapping: Type -> { icon: string, count: number }
+        const summary = {
+            "Autofill Whiz": { icon: "⚡", count: 0 },
+            "Platinum": { icon: "💎", count: 0 },
+            "Gold": { icon: "🥇", count: 0 },
+            "Silver": { icon: "🥈", count: 0 },
+            "Participation": { icon: "🎖️", count: 0 }
+        };
+
+        // 3. ITERATION: Loop through the list of badges earned
+        for (let i = 0; i < badges.length; i++) {
+            const b = badges[i];
+
+            // 4. SELECTION: Decision logic to group badges based on attempts and autofill
+            if (b.autofill === true || b.autofill === "true") {
+                summary["Autofill Whiz"].count++;
+            } else if (b.attempts === 1) {
+                summary["Platinum"].count++;
+            } else if (b.attempts === 2) {
+                summary["Gold"].count++;
+            } else if (b.attempts === 3) {
+                summary["Silver"].count++;
+            } else {
+                summary["Participation"].count++;
+            }
+        }
+
+        // 5. RENDERING: Iterating through our summary to build the UI
+        Object.keys(summary).forEach(key => {
+            const data = summary[key];
+            if (data.count > 0) {
+                const el = document.createElement('div');
+                el.className = 'badge-icon-small';
+                el.textContent = data.icon;
+                el.title = `${key}: ${data.count}`;
+
+                // Add the count bubble in the lower right
+                const countTag = document.createElement('span');
+                countTag.className = 'badge-count-tag';
+                countTag.textContent = data.count;
+                el.appendChild(countTag);
+
+                badgeShelf.appendChild(el);
+            }
+        });
+
+        // Fallback if no badges exist
+        if (badges.length === 0) {
+            badgeShelf.innerHTML = '<span style="color: rgba(103,232,249,0.3); font-size: 9px;">EARNED_BADGES: [EMPTY]</span>';
+        }
+
+    } catch (error) {
+        console.error("Error updating badge UI:", error);
+    }
+}
     /**
      * Procedure: animateBadgeToShelf(icon)
      * Handles the "Fly" animation from center to top shelf.
