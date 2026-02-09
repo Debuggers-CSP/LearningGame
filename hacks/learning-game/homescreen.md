@@ -2,7 +2,7 @@
 layout: default
 title: Maze - AI Enhanced
 authors: Anika, Cyrus, Rishabh, Jaynee, Lillian, Avantika, Meryl
-permalink: /learninggame/home-ai
+permalink: /learninggame/home
 ---
 
 <html lang="en">
