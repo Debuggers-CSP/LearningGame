@@ -1683,7 +1683,9 @@ async function updateBadgeUI() {
                 body: JSON.stringify({
                     question_id: currentPseudo.question_id,
                     level: currentPseudo.level,
-                    pseudocode: code
+                    pseudocode: code,
+                    use_ai: true
+                })
                 })
             });
 
@@ -1699,30 +1701,41 @@ async function updateBadgeUI() {
 
             if (data.passed) {
                 feedback.style.color = "#10b981";
-                feedback.textContent = "✅ Correct (meets the prompt requirements).";
+                feedback.textContent = "✅ Correct (AI graded).";
+
                 if (output) {
+                    const improved = (data.improved_pseudocode || "").trim();
+                    const fb = (data.feedback || "").trim();
                     output.textContent =
                         `PASS ✅\n` +
-                        `Question: ${data.question_id} (${data.level})\n` +
-                        `${data.notes}`;
+                        `Question: ${data.question_id} (${data.level})\n\n` +
+                        (fb ? `Feedback:\n${fb}\n\n` : "") +
+                        (improved ? `Example Passing Solution:\n${improved}\n` : "");
                 }
+
                 nextBtn.disabled = false;
                 nextBtn.style.opacity = "1";
-                 // AWARD BADGE
                 awardBadge(currentSectorNum, 1);
             } else {
                 feedback.style.color = "#fbbf24";
-                feedback.textContent = "⚠️ Not quite. Fix what’s missing and check again.";
+                feedback.textContent = "⚠️ Not quite (AI graded). Fix the missing parts and try again.";
+
                 if (output) {
                     const missingList = (data.missing || []).map(m => `- ${m}`).join("\n");
+                    const improved = (data.improved_pseudocode || "").trim();
+                    const fb = (data.feedback || "").trim();
+
                     output.textContent =
                         `FAIL ❌\n` +
                         `Missing:\n${missingList}\n\n` +
-                        `Tip: Add the missing parts, then re-check.`;
+                        (fb ? `How to fix:\n${fb}\n\n` : "") +
+                        (improved ? `Example Passing Solution:\n${improved}\n` : "");
                 }
+
                 nextBtn.disabled = true;
                 nextBtn.style.opacity = "0.5";
             }
+
         } catch (err) {
             console.error(err);
             feedback.style.color = "#ef4444";
@@ -1794,9 +1807,28 @@ async function updateBadgeUI() {
                     feedback.textContent = '✨ Answer filled! Click "Execute Command" to run.';
                     feedback.style.color = '#a855f7';
                 } else if (currentQuestion === 1) {
-                    document.getElementById('pcCode').value = data.answer;
-                    feedback.textContent = '✨ Answer filled! Click "Validate" to check.';
+                    // AI Autofill for pseudocode bank (uses question_id + level)
+                    if (!currentPseudo.question_id) {
+                        feedback.textContent = '❌ No pseudocode question loaded yet.';
+                        feedback.style.color = '#ef4444';
+                        return;
+                    }
+
+                    const url = `${window.PSEUDOCODE_BANK_URL}/ai_autofill?question_id=${encodeURIComponent(currentPseudo.question_id)}&level=${encodeURIComponent(currentPseudo.level || "")}`;
+                    const aiRes = await fetch(url, {
+                        ...window.authOptions,
+                        method: 'GET'
+                    });
+
+                    const aiData = await aiRes.json().catch(() => ({}));
+                    if (!aiRes.ok || !aiData.success) {
+                        throw new Error(aiData.message || 'Failed to AI autofill pseudocode');
+                    }
+
+                    document.getElementById('pcCode').value = aiData.answer;
+                    feedback.textContent = '✨ AI answer filled! Click "Generate + Check Answer" to grade.';
                     feedback.style.color = '#a855f7';
+                }
                 } else if (currentQuestion === 2) {
                     const buttons = mContent.querySelectorAll('.btn');
                     if (buttons[data.answer]) {
