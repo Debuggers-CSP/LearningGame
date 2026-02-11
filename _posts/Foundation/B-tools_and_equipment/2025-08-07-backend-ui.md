@@ -90,8 +90,8 @@ This page shows a table of users.
 
 1. Run the Flask app by pressing the **Play** button on `main.py`.
 You should see output like:
-Running on http://127.0.0.1:8587
-2. Open your browser and go to [http://127.0.0.1:8587](http://127.0.0.1:8587) to see the homepage.
+Running on http://127.0.0.1:8320
+2. Open your browser and go to [http://127.0.0.1:8320](http://127.0.0.1:8320) to see the homepage.
 
 ---
 ## 10. What Did We Learn?

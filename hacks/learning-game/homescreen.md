@@ -1,5 +1,6 @@
 ---
-layout: default
+layout: opencs
+microblog: True  
 title: Maze - AI Enhanced
 authors: Anika, Cyrus, Rishabh, Jaynee, Lillian, Avantika, Meryl
 permalink: /learninggame/home
@@ -252,7 +253,8 @@ permalink: /learninggame/home
             margin: 0 auto;
         }
 
-        .cell { border: 1px solid rgba(6,182,212,0.08); border-radius: 2px; position: relative; }
+        /* FIX: center letters/numbers in cells so you can see S/E and sector numbers */
+        .cell { border: 1px solid rgba(6,182,212,0.08); border-radius: 2px; position: relative; display:flex; align-items:center; justify-content:center; color:#e2e8f0; font-weight:900; font-size:12px; }
         .wall { background: linear-gradient(135deg, #1e293b 0%, #334155 100%); }
         .path { background: rgba(30, 41, 59, 0.3); }
         .player {
@@ -764,7 +766,6 @@ permalink: /learninggame/home
                 <div class="progress-box"></div>
             </div>
 
-
              <!-- NEW: CUMULATIVE BADGE LIST NEAR PROGRESS BAR -->
             <div class="badge-shelf" id="badgeShelf">
                  <span style="color: rgba(103,232,249,0.3); font-size: 9px; letter-spacing: 1px;">EARNED_BADGES: [EMPTY]</span>
@@ -871,7 +872,20 @@ permalink: /learninggame/home
     </div>
 
 <script type="module">
-    import { getRobopURI, fetchOptions } from '{{ "/assets/js/api/config.js" | relative_url }}?v=20260123_1';
+    // IMPORTANT FIX:
+    // If your config import 404s on localhost, the ENTIRE module won't run.
+    // Dynamic import keeps the page working even if the backend config isn't available.
+    let getRobopURI, fetchOptions;
+
+    try {
+        const mod = await import('{{ "/assets/js/api/config.js" | relative_url }}?v=20260123_1');
+        getRobopURI = mod.getRobopURI;
+        fetchOptions = mod.fetchOptions;
+    } catch (e) {
+        console.warn("config.js import failed (localhost fallback active):", e);
+        getRobopURI = async () => "";
+        fetchOptions = {};
+    }
 
     const robopURI = await getRobopURI();
     const API_URL = `${robopURI}/api/robop`;
@@ -881,13 +895,37 @@ permalink: /learninggame/home
     window.PSEUDOCODE_BANK_URL = PSEUDOCODE_BANK_URL;
     window.authOptions = fetchOptions;
 
+    // FIX: define these so closeSector doesn't crash later
+    const PROGRESS_KEY = "maze_progress_v1";
+    function saveProgress(sector, question, score) {
+        try {
+            const current = JSON.parse(localStorage.getItem(PROGRESS_KEY) || "{}");
+            current.completedSectors = Array.from(completedSectors);
+            current.lastSector = sector;
+            current.lastQuestion = question;
+            current.lastScore = score;
+            localStorage.setItem(PROGRESS_KEY, JSON.stringify(current));
+        } catch (e) {
+            console.warn("saveProgress failed:", e);
+        }
+    }
+    function loadProgress() {
+        try {
+            const current = JSON.parse(localStorage.getItem(PROGRESS_KEY) || "{}");
+            const arr = current.completedSectors || [];
+            arr.forEach(s => completedSectors.add(Number(s)));
+        } catch (e) {
+            console.warn("loadProgress failed:", e);
+        }
+    }
+
     let currentPseudo = {
         level: null,
         question_id: null,
         question: null
     };
 
-// --- BADGE SYSTEM DATA ---
+    // --- BADGE SYSTEM DATA ---
     let badgesEarned = []; // List of IDs e.g., ["S1-M0"]
     const badgeIcons = ["🤖", "📜", "🧠"]; // Robot, Pseudo, MCQ
     const badgeNames = ["Logic Pilot", "Syntax Architect", "Theory Master"];
@@ -934,6 +972,9 @@ permalink: /learninggame/home
     let currentQuestion = 0;
     const completedSectors = new Set();
     let usedAutofill = false;
+
+    // FIX: make this exist so closeSector can always save something
+    let finalScore = 0;
     
     let currentHintLevel = 0;
     let conversationHistory = [];
@@ -960,19 +1001,13 @@ permalink: /learninggame/home
         4: { start: [0,0], goal: [4,0], walls: [[0,1],[1,1],[2,1]] },
         5: { start: [0,2], goal: [4,2], walls: [[2,1],[2,2],[2,3]] }
     };
-  // --- NEW: BADGE SYSTEM LOGIC (AP CSP PT REQUIREMENTS) ---
 
-    /**
-     * Procedure: awardBadge(sector, module)
-     * Handles the logic of selecting the badge, showing the modal, and starting animation.
-     */
+    // --- NEW: BADGE SYSTEM LOGIC (AP CSP PT REQUIREMENTS) ---
+
     function awardBadge(s, m) {
         const id = `S${s}-M${m}`;
-        
-        // Selection: Check if badge is already earned
         if (badgesEarned.includes(id)) return;
 
-        // Visual setup
         document.getElementById('badgeAwardIconBig').textContent = badgeIcons[m];
         document.getElementById('badgeAwardTitle').textContent = `${badgeNames[m].toUpperCase()} EARNED!`;
         document.getElementById('badgeAwardName').textContent = `Sector ${s} Module Completed Successfully.`;
@@ -983,90 +1018,68 @@ permalink: /learninggame/home
             badgesEarned.push(id);
             badgeModal.style.display = 'none';
             animateBadgeToShelf(badgeIcons[m]);
-            updateBadgeUI(); // Call iteration procedure
-            
-            // Backend Update (Transactional Data Placeholder)
+            updateBadgeUI();
             updateBackendBadges(id, s, m);
         };
     }
 
-    /**
-     * Procedure: updateBadgeUI()
-     * Uses Iteration to update the icons in the progress bar area.
-     */
-   /**
- * Procedure: updateBadgeUI()
- * Satisfies AP CSP PT: Uses a List, Iteration, and Selection to process complex data.
- */
-async function updateBadgeUI() {
-    try {
-        // 1. LIST: Fetching the list of badge objects from the backend
-        const response = await fetch(`${robopURI}/api/robop/fetch_badges`, window.authOptions);
-        if (!response.ok) return;
-        const badges = await response.json(); // This is our List
+    async function updateBadgeUI() {
+        try {
+            const response = await fetch(`${robopURI}/api/robop/fetch_badges`, window.authOptions);
+            if (!response.ok) return;
+            const badges = await response.json();
 
-        badgeShelf.innerHTML = ''; // Clear placeholder
+            badgeShelf.innerHTML = '';
 
-        // 2. DATA STORAGE: Object to store counts for grouping
-        // Mapping: Type -> { icon: string, count: number }
-        const summary = {
-            "Autofill Whiz": { icon: "⚡", count: 0 },
-            "Platinum": { icon: "💎", count: 0 },
-            "Gold": { icon: "🥇", count: 0 },
-            "Silver": { icon: "🥈", count: 0 },
-            "Participation": { icon: "🎖️", count: 0 }
-        };
+            const summary = {
+                "Autofill Whiz": { icon: "⚡", count: 0 },
+                "Platinum": { icon: "💎", count: 0 },
+                "Gold": { icon: "🥇", count: 0 },
+                "Silver": { icon: "🥈", count: 0 },
+                "Participation": { icon: "🎖️", count: 0 }
+            };
 
-        // 3. ITERATION: Loop through the list of badges earned
-        for (let i = 0; i < badges.length; i++) {
-            const b = badges[i];
-
-            // 4. SELECTION: Decision logic to group badges based on attempts and autofill
-            if (b.autofill === true || b.autofill === "true") {
-                summary["Autofill Whiz"].count++;
-            } else if (b.attempts === 1) {
-                summary["Platinum"].count++;
-            } else if (b.attempts === 2) {
-                summary["Gold"].count++;
-            } else if (b.attempts === 3) {
-                summary["Silver"].count++;
-            } else {
-                summary["Participation"].count++;
+            for (let i = 0; i < badges.length; i++) {
+                const b = badges[i];
+                if (b.autofill === true || b.autofill === "true") {
+                    summary["Autofill Whiz"].count++;
+                } else if (b.attempts === 1) {
+                    summary["Platinum"].count++;
+                } else if (b.attempts === 2) {
+                    summary["Gold"].count++;
+                } else if (b.attempts === 3) {
+                    summary["Silver"].count++;
+                } else {
+                    summary["Participation"].count++;
+                }
             }
-        }
 
-        // 5. RENDERING: Iterating through our summary to build the UI
-        Object.keys(summary).forEach(key => {
-            const data = summary[key];
-            if (data.count > 0) {
-                const el = document.createElement('div');
-                el.className = 'badge-icon-small';
-                el.textContent = data.icon;
-                el.title = `${key}: ${data.count}`;
+            Object.keys(summary).forEach(key => {
+                const data = summary[key];
+                if (data.count > 0) {
+                    const el = document.createElement('div');
+                    el.className = 'badge-icon-small';
+                    el.textContent = data.icon;
+                    el.title = `${key}: ${data.count}`;
 
-                // Add the count bubble in the lower right
-                const countTag = document.createElement('span');
-                countTag.className = 'badge-count-tag';
-                countTag.textContent = data.count;
-                el.appendChild(countTag);
+                    const countTag = document.createElement('span');
+                    countTag.className = 'badge-count-tag';
+                    countTag.textContent = data.count;
+                    el.appendChild(countTag);
 
-                badgeShelf.appendChild(el);
+                    badgeShelf.appendChild(el);
+                }
+            });
+
+            if (badges.length === 0) {
+                badgeShelf.innerHTML = '<span style="color: rgba(103,232,249,0.3); font-size: 9px;">EARNED_BADGES: [EMPTY]</span>';
             }
-        });
 
-        // Fallback if no badges exist
-        if (badges.length === 0) {
-            badgeShelf.innerHTML = '<span style="color: rgba(103,232,249,0.3); font-size: 9px;">EARNED_BADGES: [EMPTY]</span>';
+        } catch (error) {
+            console.error("Error updating badge UI:", error);
         }
-
-    } catch (error) {
-        console.error("Error updating badge UI:", error);
     }
-}
-    /**
-     * Procedure: animateBadgeToShelf(icon)
-     * Handles the "Fly" animation from center to top shelf.
-     */
+
     function animateBadgeToShelf(icon) {
         const flyer = document.createElement('div');
         flyer.className = 'flying-badge';
@@ -1088,8 +1101,7 @@ async function updateBadgeUI() {
         setTimeout(() => flyer.remove(), 850);
     }
 
-   
-  async function updateBackendBadges(id, s, m) {
+    async function updateBackendBadges(id, s, m) {
         try {
             await fetch(`${robopURI}/api/robop/assign_badge`, {
                 ...window.authOptions,
@@ -1099,15 +1111,15 @@ async function updateBadgeUI() {
                     badge_name: id,
                     sector_id: s,
                     module_id: m,
-                    attempts: moduleAttempts[m], // Sends attempts for THIS specific module
-                    used_autofill: usedAutofill  // Sends whether autofill was used in this sector
+                    attempts: moduleAttempts[m],
+                    used_autofill: usedAutofill
                 })
             });
         } catch (e) { console.warn("Backend not ready: Mocking badge save."); }
     }
 
-
     // --- END BADGE SYSTEM LOGIC ---
+
     const teacherData = {
         1: {
             title: "Stop 1: Training",
@@ -1220,7 +1232,6 @@ async function updateBadgeUI() {
         }
     };
 
-
     // ========== AI CHAT FUNCTIONS ==========
 
     async function sendMessageToAI(userMessage) {
@@ -1274,7 +1285,7 @@ async function updateBadgeUI() {
 
     async function handleSendMessage() {
         const message = chatInput.value.trim();
-        if (!message) return;
+               if (!message) return;
         
         addChatMessage(message, false);
         chatInput.value = '';
@@ -1366,12 +1377,12 @@ async function updateBadgeUI() {
     }
 
     function updateBotIconVisibility() {
-    if (modal.classList.contains('active') && currentQuestion < 3) {
-        helpBotIcon.classList.add('pulsing');
-    } else {
-        helpBotIcon.classList.remove('pulsing');
+        if (modal.classList.contains('active') && currentQuestion < 3) {
+            helpBotIcon.classList.add('pulsing');
+        } else {
+            helpBotIcon.classList.remove('pulsing');
+        }
     }
-}
 
     // ========== EVENT LISTENERS ==========
 
@@ -1393,6 +1404,7 @@ async function updateBadgeUI() {
     closeAiBtn.addEventListener('click', closeAIAssistant);
     prevHintBtn.addEventListener('click', prevHint);
     nextHintBtn.addEventListener('click', nextHint);
+
     // Progress Bar Update Function
     function updateProgressBar() {
         const totalSectors = 5;
@@ -1404,7 +1416,7 @@ async function updateBadgeUI() {
         document.getElementById('statLocked').textContent = `${5 - completedCount}`;
         
         const boxes = document.querySelectorAll('.progress-box');
-        const boxesPerSector = 3; // 15 boxes / 5 sectors = 3 boxes per sector
+        const boxesPerSector = 3;
         
         boxes.forEach((box, index) => {
             const sectorIndex = Math.floor(index / boxesPerSector);
@@ -1508,7 +1520,6 @@ async function updateBadgeUI() {
                 feedback.textContent = "✅ Goal reached!";
                 nextBtn.disabled = false; 
                 nextBtn.style.opacity = "1";
-                 // AWARD BADGE
                 awardBadge(currentSectorNum, 0);
             } else { 
                 feedback.style.color = "#fbbf24";
@@ -1539,7 +1550,6 @@ async function updateBadgeUI() {
     }
 
     async function fetchRandomPseudocodeQuestion(levelNum) {
-        // levelNum should be 1..5
         const url = `${window.PSEUDOCODE_BANK_URL}/random?level=${encodeURIComponent(levelNum)}`;
 
         const res = await fetch(url, {
@@ -1554,14 +1564,12 @@ async function updateBadgeUI() {
             throw new Error(msg);
         }
 
-        return data; // {success, level, question, question_id}
+        return data;
     }
 
-        async function renderPseudoCode() {
-        // Map sector (1..5) to difficulty level (1..5)
+    async function renderPseudoCode() {
         const levelNum = currentSectorNum;
 
-        // Show loading UI immediately
         mContent.innerHTML = `
             <p style="color:#e2e8f0; margin-bottom:10px;">Fetching a random pseudocode question (Level ${levelNum})...</p>
             <div style="margin-top:10px; background:#020617; padding:10px; border-radius:8px; font-family:monospace; font-size:12px; color:#06b6d4;">
@@ -1572,7 +1580,7 @@ async function updateBadgeUI() {
         try {
             const data = await fetchRandomPseudocodeQuestion(levelNum);
 
-            currentPseudo.level = data.level;           // e.g. "level3"
+            currentPseudo.level = data.level;
             currentPseudo.question_id = data.question_id;
             currentPseudo.question = data.question;
 
@@ -1598,7 +1606,6 @@ async function updateBadgeUI() {
                 <div id="pcOutput" style="margin-top:10px; background:#020617; padding:10px; border-radius:8px; font-family:monospace; font-size:12px; color:#06b6d4; white-space:pre-wrap;">
                 Checker output will appear here.
                 </div>
-
             `;
 
             document.getElementById("validateBtn").onclick = generateAndCheckPseudo;
@@ -1617,13 +1624,8 @@ async function updateBadgeUI() {
         }
     }
 
-
     function pseudoToExport(codeRaw) {
-        // Very lightweight "export": turns pseudocode-ish lines into a JS-ish skeleton.
-        // Not meant to run. It's for display + debugging student logic.
         let code = (codeRaw || "").trim();
-
-        // Normalize arrows and common pseudocode tokens
         code = code.replaceAll("←", "=");
         code = code.replaceAll("≠", "!=");
 
@@ -1636,8 +1638,6 @@ async function updateBadgeUI() {
 
         for (let line of lines) {
             const lower = line.toLowerCase();
-
-            // map common pseudocode patterns to readable JS-ish comments
             if (lower.startsWith("input")) out.push(`  // ${line}`);
             else if (lower.startsWith("display") || lower.startsWith("print") || lower.startsWith("output")) out.push(`  // ${line}`);
             else if (lower.startsWith("if")) out.push(`  // ${line}`);
@@ -1659,7 +1659,6 @@ async function updateBadgeUI() {
         const exportBox = document.getElementById("pcExport");
         const output = document.getElementById("pcOutput");
 
-        // Basic minimum
         if (code.trim().length < 10) {
             feedback.style.color = "#fbbf24";
             feedback.textContent = "⚠️ Write a bit more pseudocode before checking.";
@@ -1668,11 +1667,9 @@ async function updateBadgeUI() {
             return;
         }
 
-        // 1) Export view
         const exported = pseudoToExport(code);
         if (exportBox) exportBox.textContent = exported;
 
-        // 2) Call backend checker
         feedback.style.color = "#06b6d4";
         feedback.textContent = "⏳ Checking your answer...";
 
@@ -1684,7 +1681,8 @@ async function updateBadgeUI() {
                 body: JSON.stringify({
                     question_id: currentPseudo.question_id,
                     level: currentPseudo.level,
-                    pseudocode: code
+                    pseudocode: code,
+                    use_ai: true
                 })
             });
 
@@ -1700,30 +1698,41 @@ async function updateBadgeUI() {
 
             if (data.passed) {
                 feedback.style.color = "#10b981";
-                feedback.textContent = "✅ Correct (meets the prompt requirements).";
+                feedback.textContent = "✅ Correct (AI graded).";
+
                 if (output) {
+                    const improved = (data.improved_pseudocode || "").trim();
+                    const fb = (data.feedback || "").trim();
                     output.textContent =
                         `PASS ✅\n` +
-                        `Question: ${data.question_id} (${data.level})\n` +
-                        `${data.notes}`;
+                        `Question: ${data.question_id} (${data.level})\n\n` +
+                        (fb ? `Feedback:\n${fb}\n\n` : "") +
+                        (improved ? `Example Passing Solution:\n${improved}\n` : "");
                 }
+
                 nextBtn.disabled = false;
                 nextBtn.style.opacity = "1";
-                 // AWARD BADGE
                 awardBadge(currentSectorNum, 1);
             } else {
                 feedback.style.color = "#fbbf24";
-                feedback.textContent = "⚠️ Not quite. Fix what’s missing and check again.";
+                feedback.textContent = "⚠️ Not quite (AI graded). Fix the missing parts and try again.";
+
                 if (output) {
                     const missingList = (data.missing || []).map(m => `- ${m}`).join("\n");
+                    const improved = (data.improved_pseudocode || "").trim();
+                    const fb = (data.feedback || "").trim();
+
                     output.textContent =
                         `FAIL ❌\n` +
                         `Missing:\n${missingList}\n\n` +
-                        `Tip: Add the missing parts, then re-check.`;
+                        (fb ? `How to fix:\n${fb}\n\n` : "") +
+                        (improved ? `Example Passing Solution:\n${improved}\n` : "");
                 }
+
                 nextBtn.disabled = true;
                 nextBtn.style.opacity = "0.5";
             }
+
         } catch (err) {
             console.error(err);
             feedback.style.color = "#ef4444";
@@ -1731,8 +1740,6 @@ async function updateBadgeUI() {
             if (output) output.textContent = "Network error calling /api/pseudocode_bank/grade";
         }
     }
-
-
 
     function renderMCQ() {
         const qs = [
@@ -1755,7 +1762,6 @@ async function updateBadgeUI() {
                     feedback.textContent="✅ Correct!"; 
                     backBtn.disabled=false; 
                     backBtn.style.opacity="1"; 
-                     // AWARD BADGE
                     awardBadge(currentSectorNum, 2);
                 } else { 
                     feedback.style.color="#ef4444";
@@ -1769,7 +1775,7 @@ async function updateBadgeUI() {
     // AUTOFILL FUNCTIONALITY
     autofillBtn.onclick = async () => {
         try {
-            usedAutofill = true; // Mark that autofill was used
+            usedAutofill = true;
             feedback.textContent = '⏳ Fetching answer...';
             feedback.style.color = '#06b6d4';
             
@@ -1795,8 +1801,25 @@ async function updateBadgeUI() {
                     feedback.textContent = '✨ Answer filled! Click "Execute Command" to run.';
                     feedback.style.color = '#a855f7';
                 } else if (currentQuestion === 1) {
-                    document.getElementById('pcCode').value = data.answer;
-                    feedback.textContent = '✨ Answer filled! Click "Validate" to check.';
+                    if (!currentPseudo.question_id) {
+                        feedback.textContent = '❌ No pseudocode question loaded yet.';
+                        feedback.style.color = '#ef4444';
+                        return;
+                    }
+
+                    const url = `${window.PSEUDOCODE_BANK_URL}/ai_autofill?question_id=${encodeURIComponent(currentPseudo.question_id)}&level=${encodeURIComponent(currentPseudo.level || "")}`;
+                    const aiRes = await fetch(url, {
+                        ...window.authOptions,
+                        method: 'GET'
+                    });
+
+                    const aiData = await aiRes.json().catch(() => ({}));
+                    if (!aiRes.ok || !aiData.success) {
+                        throw new Error(aiData.message || 'Failed to AI autofill pseudocode');
+                    }
+
+                    document.getElementById('pcCode').value = aiData.answer;
+                    feedback.textContent = '✨ AI answer filled! Click "Generate + Check Answer" to grade.';
                     feedback.style.color = '#a855f7';
                 } else if (currentQuestion === 2) {
                     const buttons = mContent.querySelectorAll('.btn');
@@ -1818,34 +1841,19 @@ async function updateBadgeUI() {
     };
 
     backBtn.onclick = async () => {
-        let finalScore, earnedBadge;
-        
         if (usedAutofill) {
-            // If autofill was used, automatically give 0 score and Participant badge
             finalScore = 0;
-            earnedBadge = "Participant";
         } else {
-            // Normal scoring calculation
             let weightedSum = 0;
             const pts = moduleAttempts.map(a => Math.max(1, 6 - a));
             for (let i=0; i<3; i++) weightedSum += (pts[i]/5) * weights[i];
             finalScore = weightedSum * 100;
-            //nst badgeRules = [{name: "Gold", threshold: 95}, {name: "Silver", threshold: 80}, {name: "Bronze", threshold: 65}, {name: "Participant", threshold: 0}];
-            //eaedBadge = "Participant";
-            /*r (let r of badgeRules) { 
-                if (finalScore >= r.threshold) { 
-                    earnedBadge = r.name; 
-                    break; 
-                } 
-            }*/
         }
         
         mContent.innerHTML = `
             <div class="summary-card">
                 <h3 style="color:#fbbf24; margin-bottom:10px;">SECTOR RESULTS</h3>
-                
                 <div class="summary-row"><span>Total Score:</span><span>${Math.round(finalScore)}%</span></div>
-                
                 <button class="btn btn-blue" id="finalCloseBtn" style="width:100%">Continue</button>
             </div>`;
         document.getElementById('finalCloseBtn').onclick = closeSector;
@@ -1878,6 +1886,7 @@ async function updateBadgeUI() {
                 currentQuestion = 0;
                 moduleAttempts = [0, 0, 0];
                 usedAutofill = false;
+                finalScore = 0;
                 conversationHistory = [];
                 setTimeout(() => {
                     modal.classList.add('active');
