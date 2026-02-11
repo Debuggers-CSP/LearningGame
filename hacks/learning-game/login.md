@@ -364,7 +364,6 @@ comments: True
         <div class="title">Cadet Academy</div>
         <div class="subtitle">Authorization Required // Station Access Control</div>
       </div>
-
       <div class="tab-buttons">
         <button class="tab-btn active" onclick="switchTab('register', event)">
           <span style="position: relative; z-index: 1;">Register</span>
@@ -373,7 +372,6 @@ comments: True
           <span style="position: relative; z-index: 1;">Login</span>
         </button>
       </div>
-
       <!-- Registration Form -->
       <div id="register-form" class="form-container active">
         <div onsubmit="handleRegister(event); return false;">
@@ -381,28 +379,23 @@ comments: True
             <label class="form-label">First Name</label>
             <input type="text" class="form-input" id="reg-firstname" placeholder="Enter first name" required>
           </div>
-
           <div class="form-group">
             <label class="form-label">Last Name</label>
             <input type="text" class="form-input" id="reg-lastname" placeholder="Enter last name" required>
           </div>
-
           <div class="form-group">
             <label class="form-label">Cadet ID (GitHub)</label>
             <input type="text" class="form-input" id="reg-github" placeholder="Enter GitHub username" required>
           </div>
-
           <div class="form-group">
             <label class="form-label">Access Code (Password)</label>
             <input type="password" class="form-input" id="reg-password" placeholder="Create access code" required>
           </div>
-
           <button type="button" class="submit-btn" onclick="handleRegister(event)">
             <span style="position: relative; z-index: 1;">Initialize Cadet Profile</span>
           </button>
         </div>
       </div>
-
       <!-- Login Form -->
       <div id="login-form" class="form-container">
         <div onsubmit="handleLogin(event); return false;">
@@ -410,24 +403,19 @@ comments: True
             <label class="form-label">Cadet ID (GitHub)</label>
             <input type="text" class="form-input" id="login-github" placeholder="Enter GitHub username" required>
           </div>
-
           <div class="form-group">
             <label class="form-label">Access Code</label>
             <input type="password" class="form-input" id="login-password" placeholder="Enter access code" required>
           </div>
-
           <button type="button" class="submit-btn" onclick="handleLogin(event)">
             <span style="position: relative; z-index: 1;">Access Station Systems</span>
           </button>
         </div>
       </div>
-
       <div class="loading">
         <div class="loading-spinner"></div>
       </div>
-
       <div id="message" class="message"></div>
-
       <div id="continue-section" style="display: none; margin-top: 20px;">
         <button class="submit-btn" onclick="continueToGame()">
           <span style="position: relative; z-index: 1;">Continue to Station</span>
@@ -436,7 +424,6 @@ comments: True
           <span style="position: relative; z-index: 1;">Sign Out</span>
         </button>
       </div>
-
       <div class="footer-hint">
         Authorized Personnel Only // Security Level: Cadet
       </div>
