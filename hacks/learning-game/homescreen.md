@@ -70,7 +70,6 @@ permalink: /learninggame/home
     .title { color: #06b6d4; font-size: 24px; font-weight: 900; text-transform: uppercase; letter-spacing: 4px; }
     .subtitle { text-align: center; color: rgba(103,232,249,0.7); font-size: 12px; font-family: 'Courier New', monospace; }
 
-    /* Progress Bar Styles */
     .progress-bar-container {
       background: rgba(2, 6, 23, 0.6);
       padding: 12px 18px;
@@ -108,7 +107,6 @@ permalink: /learninggame/home
     .stat-value { font-size: 18px; font-weight: 900; color: #06b6d4; display: block; margin-bottom: 4px; transition: all 0.3s ease; }
     .stat-label { font-size: 9px; color: rgba(103,232,249,0.5); letter-spacing: 1.5px; text-transform: uppercase; }
 
-    /* Badge shelf */
     .badge-shelf {
       display: flex;
       gap: 8px;
@@ -205,7 +203,6 @@ permalink: /learninggame/home
       margin: 0 auto;
     }
 
-    /* Center letters/numbers in cells */
     .cell {
       border: 1px solid rgba(6,182,212,0.08);
       border-radius: 2px;
@@ -624,21 +621,23 @@ permalink: /learninggame/home
   // Config import safe fallback
   let getRobopURI, fetchOptions;
   try {
-    const mod = await import('{{ "/assets/js/api/config.js" | relative_url }}?v=20260123_1');
+    const mod = await import('{{ "/assets/js/api/config.js" | relative_url }}?v=20260211_1');
     getRobopURI = mod.getRobopURI;
     fetchOptions = mod.fetchOptions;
   } catch (e) {
-    console.warn("config.js import failed (localhost fallback active):", e);
+    console.warn("config.js import failed (fallback active):", e);
     getRobopURI = async () => "";
     fetchOptions = {};
   }
 
-  const robopURI = await getRobopURI();
+  const robopURI = (await getRobopURI()) || "";
 
-  // Make sure cookies/sessions work across requests (important for Flask session auth)
+  // Always include credentials (cookies/session), and allow cross-origin when backend enables CORS
   const AUTH = {
     ...fetchOptions,
-    credentials: (fetchOptions && fetchOptions.credentials) ? fetchOptions.credentials : "include"
+    credentials: (fetchOptions && fetchOptions.credentials) ? fetchOptions.credentials : "include",
+    // mode: "cors" is safe even same-origin; browser will still enforce CORS rules
+    mode: "cors"
   };
 
   const API_URL = `${robopURI}/api/robop`;
@@ -647,6 +646,44 @@ permalink: /learninggame/home
   window.API_URL = API_URL;
   window.PSEUDOCODE_BANK_URL = PSEUDOCODE_BANK_URL;
   window.authOptions = AUTH;
+
+  // ---------- safer fetch helpers ----------
+  function prettyUrl(u) {
+    try { return new URL(u, window.location.origin).toString(); } catch { return u; }
+  }
+
+  async function fetchJSON(url, options = {}) {
+    const finalUrl = prettyUrl(url);
+    try {
+      const res = await fetch(finalUrl, {
+        ...window.authOptions,
+        ...options,
+        headers: {
+          ...(options.headers || {}),
+          ...(options.body ? { "Content-Type": "application/json" } : {})
+        }
+      });
+
+      const text = await res.text();
+      let data = {};
+      try { data = text ? JSON.parse(text) : {}; } catch { data = { raw: text }; }
+
+      if (!res.ok) {
+        const msg = (data && (data.message || data.error)) ? (data.message || data.error) : `${res.status} ${res.statusText}`;
+        throw new Error(msg);
+      }
+      return data;
+    } catch (err) {
+      // This is the actual "Failed to fetch" category (CORS, DNS, server down, mixed content)
+      const hint =
+        `Network/CORS error calling:\n${finalUrl}\n\n` +
+        `If your site and backend are different domains/ports, you MUST enable CORS on the backend.\n` +
+        `Open DevTools → Network to see the blocked request.`;
+      err.message = `${err.message}\n\n${hint}`;
+      throw err;
+    }
+  }
+  // ----------------------------------------
 
   // local progress
   const PROGRESS_KEY = "maze_progress_v1";
@@ -767,10 +804,8 @@ permalink: /learninggame/home
 
   async function updateBackendBadges(id, s, m) {
     try {
-      await fetch(`${robopURI}/api/robop/assign_badge`, {
-        ...window.authOptions,
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      await fetchJSON(`${robopURI}/api/robop/assign_badge`, {
+        method: "POST",
         body: JSON.stringify({
           badge_name: id,
           sector_id: s,
@@ -780,15 +815,13 @@ permalink: /learninggame/home
         })
       });
     } catch (e) {
-      console.warn("Backend not ready: Mocking badge save.");
+      console.warn("Backend not ready: badge save skipped:", e.message);
     }
   }
 
   async function updateBadgeUI() {
     try {
-      const response = await fetch(`${robopURI}/api/robop/fetch_badges`, window.authOptions);
-      if (!response.ok) return;
-      const badges = await response.json();
+      const badges = await fetchJSON(`${robopURI}/api/robop/fetch_badges`, { method: "GET" });
 
       badgeShelf.innerHTML = '';
 
@@ -800,8 +833,9 @@ permalink: /learninggame/home
         "Participation": { icon: "🎖️", count: 0 }
       };
 
-      for (let i = 0; i < badges.length; i++) {
-        const b = badges[i];
+      const list = Array.isArray(badges) ? badges : (badges.badges || []);
+      for (let i = 0; i < list.length; i++) {
+        const b = list[i];
         if (b.autofill === true || b.autofill === "true") summary["Autofill Whiz"].count++;
         else if (b.attempts === 1) summary["Platinum"].count++;
         else if (b.attempts === 2) summary["Gold"].count++;
@@ -826,15 +860,15 @@ permalink: /learninggame/home
         }
       });
 
-      if (badges.length === 0) {
+      if (list.length === 0) {
         badgeShelf.innerHTML = '<span style="color: rgba(103,232,249,0.3); font-size: 9px;">EARNED_BADGES: [EMPTY]</span>';
       }
     } catch (error) {
-      console.error("Error updating badge UI:", error);
+      console.warn("Badge UI fetch failed:", error.message);
     }
   }
 
-  // teacher data (same as your original)
+  // teacher data
   const teacherData = {
     1: { title: "Stop 1: Training",
       msg: "Robot code is a pseudocode-style language with four commands—MOVE_FORWARD(), ROTATE_LEFT(), ROTATE_RIGHT(), and CAN_MOVE(direction)—used to control a robot through a maze. Pseudocode: Use plain-language, step-by-step logic (variables, conditionals, loops, and logical flow) to describe how your algorithm should work before worrying about strict programming syntax. Computational thinking: break the problem into small rules, test your logic, and iterate based on what you observe.",
@@ -879,10 +913,8 @@ permalink: /learninggame/home
 
   async function sendMessageToAI(userMessage) {
     try {
-      const response = await fetch(`${API_URL}/ai_chat`, {
-        ...window.authOptions,
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const data = await fetchJSON(`${API_URL}/ai_chat`, {
+        method: "POST",
         body: JSON.stringify({
           sector_id: currentSectorNum,
           question_num: currentQuestion,
@@ -891,8 +923,7 @@ permalink: /learninggame/home
         })
       });
 
-      const data = await response.json();
-      if (!response.ok || !data.success) throw new Error(data.message || 'Failed to get AI response');
+      if (!data.success) throw new Error(data.message || 'Failed to get AI response');
       return data.ai_response;
     } catch (error) {
       console.error('AI Chat Error:', error);
@@ -1195,11 +1226,7 @@ permalink: /learninggame/home
   }
 
   async function fetchRandomPseudocodeQuestion(levelNum) {
-    const url = `${window.PSEUDOCODE_BANK_URL}/random?level=${encodeURIComponent(levelNum)}`;
-    const res = await fetch(url, { ...window.authOptions, method: "GET" });
-    const data = await res.json().catch(() => ({}));
-    if (!res.ok || !data.success) throw new Error(data.message || `Failed to fetch pseudocode question for level ${levelNum}`);
-    return data;
+    return await fetchJSON(`${window.PSEUDOCODE_BANK_URL}/random?level=${encodeURIComponent(levelNum)}`, { method: "GET" });
   }
 
   async function renderPseudoCode() {
@@ -1251,8 +1278,8 @@ permalink: /learninggame/home
       feedback.textContent = `❌ ${err.message}`;
       mContent.innerHTML = `
         <p style="color:#e2e8f0; margin-bottom:10px;">Could not load a question for Level ${levelNum}.</p>
-        <div style="margin-top:10px; background:#020617; padding:10px; border-radius:8px; font-family:monospace; font-size:12px; color:#06b6d4;">
-          Check that your backend is running and that /api/pseudocode_bank/random works.
+        <div style="margin-top:10px; background:#020617; padding:10px; border-radius:8px; font-family:monospace; font-size:12px; color:#06b6d4; white-space:pre-wrap;">
+${err.message}
         </div>
       `;
     }
@@ -1297,10 +1324,8 @@ permalink: /learninggame/home
     feedback.textContent = "⏳ Checking your answer...";
 
     try {
-      const res = await fetch(`${window.PSEUDOCODE_BANK_URL}/grade`, {
-        ...window.authOptions,
+      const data = await fetchJSON(`${window.PSEUDOCODE_BANK_URL}/grade`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           question_id: currentPseudo.question_id,
           level: currentPseudo.level,
@@ -1309,49 +1334,38 @@ permalink: /learninggame/home
         })
       });
 
-      const data = await res.json().catch(() => ({}));
+      if (!data.success) throw new Error(data.message || "Checker failed.");
 
-      if (!res.ok || !data.success) {
-        const msg = data.message || "Checker failed.";
-        feedback.style.color = "#ef4444";
-        feedback.textContent = `❌ ${msg}`;
-        if (output) output.textContent = `Server error: ${msg}`;
-        return;
-      }
+      const outputBox = document.getElementById("pcOutput");
 
       if (data.passed) {
         feedback.style.color = "#10b981";
         feedback.textContent = "✅ Correct (AI graded).";
-
-        if (output) {
+        if (outputBox) {
           const improved = (data.improved_pseudocode || "").trim();
           const fb = (data.feedback || "").trim();
-          output.textContent =
+          outputBox.textContent =
             `PASS ✅\n` +
             `Question: ${data.question_id} (${data.level})\n\n` +
             (fb ? `Feedback:\n${fb}\n\n` : "") +
             (improved ? `Example Passing Solution:\n${improved}\n` : "");
         }
-
         nextBtn.disabled = false;
         nextBtn.style.opacity = "1";
         awardBadge(currentSectorNum, 1);
       } else {
         feedback.style.color = "#fbbf24";
         feedback.textContent = "⚠️ Not quite (AI graded). Fix the missing parts and try again.";
-
-        if (output) {
+        if (outputBox) {
           const missingList = (data.missing || []).map(m => `- ${m}`).join("\n");
           const improved = (data.improved_pseudocode || "").trim();
           const fb = (data.feedback || "").trim();
-
-          output.textContent =
+          outputBox.textContent =
             `FAIL ❌\n` +
-            `Missing:\n${missingList}\n\n` +
+            (missingList ? `Missing:\n${missingList}\n\n` : "") +
             (fb ? `How to fix:\n${fb}\n\n` : "") +
             (improved ? `Example Passing Solution:\n${improved}\n` : "");
         }
-
         nextBtn.disabled = true;
         nextBtn.style.opacity = "0.5";
       }
@@ -1360,7 +1374,8 @@ permalink: /learninggame/home
       console.error(err);
       feedback.style.color = "#ef4444";
       feedback.textContent = "❌ Error connecting to checker.";
-      if (output) output.textContent = "Network error calling /api/pseudocode_bank/grade";
+      const output = document.getElementById("pcOutput");
+      if (output) output.textContent = err.message;
     }
   }
 
@@ -1396,25 +1411,23 @@ permalink: /learninggame/home
     });
   }
 
-  // ✅ Autofill with AI-first + fallback (this fixes your “pseudocode autofill isn’t working”)
+  // ---------- FIXED AUTOFILL ----------
+  // Robot + MCQ: /api/robop/autofill (existing)
+  // Pseudocode: /api/pseudocode_bank/ai_autofill first, then /api/pseudocode_bank/autofill, then fallback /api/robop/autofill
   autofillBtn.onclick = async () => {
     try {
       usedAutofill = true;
       feedback.textContent = '⏳ Fetching answer...';
       feedback.style.color = '#06b6d4';
 
-      // Sector robot/mcq autofill still uses /api/robop/autofill (your existing endpoint)
+      // Robot / MCQ autofill
       if (currentQuestion === 0 || currentQuestion === 2) {
-        const response = await fetch(`${window.API_URL}/autofill`, {
-          ...window.authOptions,
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+        const data = await fetchJSON(`${window.API_URL}/autofill`, {
+          method: "POST",
           body: JSON.stringify({ sector_id: currentSectorNum, question_num: currentQuestion })
         });
 
-        if (!response.ok) throw new Error('Failed to fetch answer');
-        const data = await response.json().catch(() => ({}));
-        if (!data.success) throw new Error(data.message || 'Failed to get answer');
+        if (!data.success) throw new Error(data.message || "Autofill failed.");
 
         if (currentQuestion === 0) {
           document.getElementById('rcInput').value = data.answer;
@@ -1430,7 +1443,7 @@ permalink: /learninggame/home
         }
       }
 
-      // Pseudocode autofill (Question 1): try /api/pseudocode_bank/ai_autofill first, then fallback to /api/robop/autofill
+      // Pseudocode autofill
       if (currentQuestion === 1) {
         if (!currentPseudo.question_id) {
           feedback.textContent = '❌ No pseudocode question loaded yet.';
@@ -1438,50 +1451,60 @@ permalink: /learninggame/home
           return;
         }
 
-        // 1) AI attempt
-        let aiAnswer = null;
+        const payload = {
+          question_id: currentPseudo.question_id,
+          level: currentPseudo.level,
+          prompt: currentPseudo.question
+        };
+
+        // 1) try AI autofill (POST preferred)
+        let answer = null;
         try {
-          const url = `${window.PSEUDOCODE_BANK_URL}/ai_autofill?question_id=${encodeURIComponent(currentPseudo.question_id)}&level=${encodeURIComponent(currentPseudo.level || "")}`;
-          const aiRes = await fetch(url, { ...window.authOptions, method: 'GET' });
-          const aiData = await aiRes.json().catch(() => ({}));
-
-          if (aiRes.ok && aiData.success && aiData.answer) aiAnswer = aiData.answer;
-        } catch (e) {
-          aiAnswer = null;
-        }
-
-        // 2) Fallback if AI missing/slow/broken
-        if (!aiAnswer) {
-          const fallbackRes = await fetch(`${window.API_URL}/autofill`, {
-            ...window.authOptions,
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ question_id: currentPseudo.question_id, level: currentPseudo.level })
+          const ai = await fetchJSON(`${window.PSEUDOCODE_BANK_URL}/ai_autofill`, {
+            method: "POST",
+            body: JSON.stringify(payload)
           });
-
-          const fbData = await fallbackRes.json().catch(() => ({}));
-          if (!fallbackRes.ok || !fbData.success) {
-            throw new Error(fbData.message || 'Failed to autofill pseudocode');
-          }
-
-          aiAnswer = fbData.answer;
-          feedback.textContent = '✨ Filled (fallback). Click "Generate + Check Answer" to grade.';
-          feedback.style.color = '#a855f7';
-        } else {
-          feedback.textContent = '✨ AI answer filled! Click "Generate + Check Answer" to grade.';
-          feedback.style.color = '#a855f7';
+          if (ai && ai.success && ai.answer) answer = ai.answer;
+        } catch (e) {
+          answer = null;
         }
 
-        document.getElementById('pcCode').value = aiAnswer;
+        // 2) try plain autofill endpoint
+        if (!answer) {
+          try {
+            const plain = await fetchJSON(`${window.PSEUDOCODE_BANK_URL}/autofill`, {
+              method: "POST",
+              body: JSON.stringify(payload)
+            });
+            if (plain && plain.success && plain.answer) answer = plain.answer;
+          } catch (e) {
+            answer = null;
+          }
+        }
+
+        // 3) fallback: your existing robop autofill (in case you wired it there)
+        if (!answer) {
+          const fb = await fetchJSON(`${window.API_URL}/autofill`, {
+            method: "POST",
+            body: JSON.stringify(payload)
+          });
+          if (!fb.success || !fb.answer) throw new Error(fb.message || "Failed to autofill pseudocode.");
+          answer = fb.answer;
+        }
+
+        document.getElementById('pcCode').value = answer;
+        feedback.textContent = '✨ Filled! Click "Generate + Check Answer" to grade.';
+        feedback.style.color = '#a855f7';
         return;
       }
 
     } catch (error) {
       console.error('Autofill error:', error);
-      feedback.textContent = '❌ Error connecting to server';
+      feedback.textContent = '❌ ' + (error.message || 'Error connecting to server');
       feedback.style.color = '#ef4444';
     }
   };
+  // ----------------------------------
 
   backBtn.onclick = async () => {
     if (usedAutofill) {
@@ -1552,7 +1575,6 @@ permalink: /learninggame/home
   };
 
   document.addEventListener('keydown', e => {
-    // secret bypass (kept from your original)
     if (e.key === 'S' && e.shiftKey && modal.classList.contains('active')) {
       awardBadge(currentSectorNum, currentQuestion);
       nextBtn.disabled = false;
@@ -1570,7 +1592,7 @@ permalink: /learninggame/home
     if (e.key === 'ArrowRight') movePlayer(1, 0);
   });
 
-  // ✅ IMPORTANT: load progress before drawing UI
+  // IMPORTANT: load progress before drawing UI
   loadProgress();
   drawMaze();
   updateProgressBar();
