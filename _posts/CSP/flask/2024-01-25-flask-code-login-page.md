@@ -327,9 +327,9 @@ If we look closely, we see that login is imported from config.js. Let's take a l
 ```javascript
 export var pythonURI;
 if (location.hostname === "localhost") {
-        pythonURI = "http://localhost:8587";
+        pythonURI = "http://localhost:8320";
 } else if (location.hostname === "127.0.0.1") {
-        pythonURI = "http://127.0.0.1:8587";
+        pythonURI = "http://127.0.0.1:8320";
 } else {
         pythonURI =  "https://flask.opencodingsociety.com";
 }

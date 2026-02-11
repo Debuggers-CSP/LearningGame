@@ -3,7 +3,7 @@
 export const baseurl = "{{ site.baseurl }}";
 
 export var pythonURI;
-const PYTHON_LOCAL = "http://localhost:8587";
+const PYTHON_LOCAL = "http://localhost:8320";
 const PYTHON_PROD = "https://flask.opencodingsociety.com";
 const isLocalHost = ["localhost", "127.0.0.1"].includes(location.hostname);
 
