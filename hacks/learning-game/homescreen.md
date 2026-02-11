@@ -6,7 +6,8 @@ permalink: /learninggame/home
 ---
 
 <html lang="en">
-<head>
+<head>bundle -v
+
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Space Station Navigation - Full Preview</title>

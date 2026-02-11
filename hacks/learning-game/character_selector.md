@@ -254,14 +254,15 @@ document.getElementById('submit-btn').addEventListener('click', function() {
     }
     
     // I/O: Send data to backend server
-    fetch('http://localhost:3000/player/' + playerId + '/character', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-            displayName: characterName, 
-            characterClass: selectedCharacter 
-        })
+fetch('http://127.0.0.1:8320/api/update_character', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify({
+        name: characterName,
+        class: selectedCharacter
     })
+})
     .then(response => response.json())
     .then(data => {
         if (data.success) {
