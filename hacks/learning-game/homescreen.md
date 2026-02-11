@@ -1,1934 +1,1582 @@
 ---
 layout: opencs
-microblog: True  
+microblog: True
 title: Maze - AI Enhanced
 authors: Anika, Cyrus, Rishabh, Jaynee, Lillian, Avantika, Meryl
 permalink: /learninggame/home
 ---
 
+<!doctype html>
 <html lang="en">
-<head>bundle -v
-
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Space Station Navigation - Full Preview</title>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        
-         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #020617 0%, #0f172a 50%, #1e1b4b 100%);
-            height: 100vh; width: 100vw; display: flex; 
-            justify-content: center; align-items: center;
-            overflow: hidden; position: relative;
-        }
-
-        .stars { position: fixed; inset: 0; overflow: hidden; z-index: 0; }
-        .star { position: absolute; width: 2px; height: 2px; background: white; border-radius: 50%; animation: twinkle 3s infinite; }
-
-        @keyframes twinkle {
-            0%, 100% { opacity: 0.3; }
-            50% { opacity: 1; }
-        }
-
- /* --- BADGE SYSTEM STYLES --- */
-        .badge-shelf {
-            display: flex;
-            gap: 8px;
-            margin-top: 10px;
-            padding-top: 10px;
-            border-top: 1px solid rgba(6, 182, 212, 0.2);
-            min-height: 40px;
-            flex-wrap: wrap;
-        }
-
-        .badge-icon-small {
-            width: 28px;
-            height: 28px;
-            background: rgba(6, 182, 212, 0.2);
-            border: 1px solid rgba(6, 182, 212, 0.5);
-            border-radius: 6px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 16px;
-            transition: all 0.3s ease;
-        }
-
-        .badge-award-modal {
-            display: none;
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            z-index: 2000;
-            background: rgba(15, 23, 42, 0.98);
-            backdrop-filter: blur(20px);
-            padding: 40px;
-            border-radius: 30px;
-            border: 2px solid #fbbf24;
-            text-align: center;
-            box-shadow: 0 0 80px rgba(251, 191, 36, 0.3);
-            width: 320px;
-        }
-
-        .badge-award-modal h2 { color: #fbbf24; letter-spacing: 2px; margin-bottom: 15px; }
-        
-        #badgeAwardIconBig { font-size: 70px; margin: 20px 0; display: block; filter: drop-shadow(0 0 15px rgba(251,191,36,0.5)); }
-
-        .flying-badge {
-            position: fixed;
-            z-index: 3000;
-            font-size: 30px;
-            transition: all 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            pointer-events: none;
-        }
-        /* --- END BADGE SYSTEM STYLES --- */
-
-        body::before {
-            content: ''; position: fixed; top: 10%; left: 10%; width: 500px; height: 500px;
-            background: radial-gradient(circle, rgba(6,182,212,0.15), transparent 70%);
-            filter: blur(80px); z-index: 0;
-        }
-
-        body::after {
-            content: ''; position: fixed; bottom: 10%; right: 10%; width: 500px; height: 500px;
-            background: radial-gradient(circle, rgba(168,85,247,0.15), transparent 70%);
-            filter: blur(80px); z-index: 0;
-        }
-
-        .container {
-            position: relative; width: 90vw; max-width: 900px; height: 90vh; max-height: 850px;
-            background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(20px);
-            border-radius: 24px; border: 2px solid rgba(6,182,212,0.4);
-            box-shadow: 0 0 60px rgba(6,182,212,0.25); overflow: hidden;
-            z-index: 1; display: flex; flex-direction: column;
-        }
-
-        .title-section {
-            position: relative; width: 100%; background: rgba(15,23,42,0.95);
-            padding: 15px 20px; border-bottom: 2px solid rgba(6,182,212,0.3);
-            z-index: 50; flex-shrink: 0;
-        }
-
-        .title-header { display: flex; align-items: center; justify-content: center; gap: 12px; margin-bottom: 6px; }
-        .title { color: #06b6d4; font-size: 24px; font-weight: 900; text-transform: uppercase; letter-spacing: 4px; }
-        .subtitle { text-align: center; color: rgba(103,232,249,0.7); font-size: 12px; font-family: 'Courier New', monospace; }
-
-        /* Styling for badge counts (Lower Right corner) */
-        .badge-icon-small {
-            position: relative; /* Necessary for absolute positioning of the count */
-        }
-
-        .badge-count-tag {
-            position: absolute;
-            bottom: -4px;
-            right: -4px;
-            background: #ef4444;
-            color: white;
-            font-size: 9px;
-            padding: 1px 4px;
-            border-radius: 10px;
-            font-weight: bold;
-            border: 1px solid #0f172a;
-            line-height: 1;
-        }
-
-        /* Progress Bar Styles */
-        .progress-bar-container {
-            background: rgba(2, 6, 23, 0.6);
-            padding: 12px 20px;
-            border-radius: 12px;
-            margin: 8px 20px;
-            border: 1px solid rgba(6,182,212,0.2);
-            flex-shrink: 0;
-        }
-
-        .progress-header {
-            font-size: 10px;
-            color: #06b6d4;
-            letter-spacing: 3px;
-            margin-bottom: 6px;
-            font-weight: 700;
-            text-transform: uppercase;
-        }
-
-        .progress-main {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            margin-bottom: 8px;
-        }
-
-        .progress-percentage {
-            font-size: 32px;
-            font-weight: 900;
-            color: #10b981;
-            min-width: 70px;
-            transition: all 0.5s ease;
-        }
-
-        .progress-status {
-            font-size: 11px;
-            color: rgba(103,232,249,0.6);
-            letter-spacing: 2px;
-            text-transform: uppercase;
-        }
-
-        .progress-boxes {
-            display: flex;
-            gap: 6px;
-            margin-bottom: 8px;
-        }
-
-        .progress-box {
-            width: 20px;
-            height: 20px;
-            background: rgba(30, 41, 59, 0.5);
-            border: 1px solid rgba(6,182,212,0.3);
-            border-radius: 3px;
-            transition: all 0.3s ease;
-        }
-
-        .progress-box.completed {
-            background: #10b981;
-            border-color: #10b981;
-            box-shadow: 0 0 10px rgba(16,185,129,0.5);
-        }
-
-        .progress-stats {
-            display: flex;
-            justify-content: space-between;
-            gap: 15px;
-        }
-
-        .stat-item {
-            text-align: center;
-            flex: 1;
-        }
-
-        .stat-value {
-            font-size: 18px;
-            font-weight: 900;
-            color: #06b6d4;
-            display: block;
-            margin-bottom: 4px;
-            transition: all 0.3s ease;
-        }
-
-        .stat-label {
-            font-size: 9px;
-            color: rgba(103,232,249,0.5);
-            letter-spacing: 1.5px;
-            text-transform: uppercase;
-        }
-
-        .maze-container {
-            flex-grow: 1; 
-            width: 100%; 
-            display: flex; 
-            flex-direction: column;
-            justify-content: center; 
-            align-items: center; 
-            padding: 12px 20px 20px 20px;
-            min-height: 0;
-            overflow: hidden;
-        }
-
-        .maze {
-            width: 100%; 
-            max-width: 750px;
-            height: auto;
-            aspect-ratio: 15 / 11;
-            max-height: 550px;
-            background: rgba(2, 6, 23, 0.5); 
-            backdrop-filter: blur(10px);
-            border-radius: 20px; 
-            border: 2px solid rgba(16,185,129,0.4);
-            display: grid; 
-            grid-template-columns: repeat(15, 1fr); 
-            grid-template-rows: repeat(11, 1fr);
-            padding: 8px; 
-            gap: 3px; 
-            margin: 0 auto;
-        }
-
-        /* FIX: center letters/numbers in cells so you can see S/E and sector numbers */
-        .cell { border: 1px solid rgba(6,182,212,0.08); border-radius: 2px; position: relative; display:flex; align-items:center; justify-content:center; color:#e2e8f0; font-weight:900; font-size:12px; }
-        .wall { background: linear-gradient(135deg, #1e293b 0%, #334155 100%); }
-        .path { background: rgba(30, 41, 59, 0.3); }
-        .player {
-            background: radial-gradient(circle, #06b6d4 0%, #3b82f6 100%);
-            border-radius: 50%; box-shadow: 0 0 20px rgba(6,182,212,0.8);
-            width: 80%; height: 80%; margin: 10%; z-index: 20; position: absolute;
-        }
-        .sector {
-            background: linear-gradient(135deg, rgba(251,191,36,0.3) 0%, rgba(217,119,6,0.3) 100%);
-            border-radius: 50%; display: flex; justify-content: center; align-items: center;
-            color: #fbbf24; font-weight: 900; font-size: 14px; width: 90%; height: 90%; margin: 5%;
-        }
-        .completed { background: #10b981 !important; color: white; }
-        .start { background: rgba(16,185,129,0.3); color: #10b981; }
-        .end { background: rgba(168,85,247,0.3); color: #a855f7; }
-
-        .controls-hint {
-            color: rgba(103,232,249,0.6);
-            font-size: 11px;
-            margin-top: 10px;
-            text-align: center;
-            font-family: 'Courier New', monospace;
-        }
-
-        .question-modal {
-            display: none; position: absolute; inset: 0; z-index: 100;
-            justify-content: center; align-items: center;
-            background: rgba(2, 6, 23, 0.92); backdrop-filter: blur(14px);
-        }
-        .question-modal.active { display: flex; }
-        .question-card { width: min(720px, 92vw); background: #1e293b; border: 1px solid #06b6d4; border-radius: 24px; padding: 30px; position: relative; }
-        
-        .robot-grid {
-            display: grid; grid-template-columns: repeat(5, 45px); grid-template-rows: repeat(5, 45px);
-            gap: 4px; background: #0f172a; padding: 10px; border-radius: 8px; margin: 10px auto; justify-content: center;
-        }
-        .r-cell { width: 45px; height: 45px; background: rgba(30, 41, 59, 0.5); border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 24px; }
-        .r-wall { background: #ef4444; }
-
-        textarea { width: 100%; height: 120px; background: #020617; color: #06b6d4; border: 1px solid #06b6d4; padding: 10px; font-family: monospace; border-radius: 8px; }
-        .btn { padding: 12px 20px; border-radius: 12px; border: none; cursor: pointer; font-weight: 900; transition: all 0.2s ease; }
-        .btn:hover { transform: translateY(-2px); }
-        .btn-blue { background: #06b6d4; color: white; }
-        .btn-check { background: #fbbf24; color: black; width: 100%; margin-top: 10px; }
-        .btn-autofill { background: #a855f7; color: white; }
-        
-        #feedback { margin-top: 10px; font-weight: 800; text-align: center; min-height: 20px; }
-
-        .summary-card { text-align: left; color: #e2e8f0; }
-        .summary-row { display: flex; justify-content: space-between; margin: 10px 0; border-bottom: 1px solid rgba(148,163,184,0.1); padding-bottom: 5px; }
-        .badge-display { font-size: 48px; text-align: center; margin: 20px 0; color: #fbbf24; text-shadow: 0 0 20px rgba(251,191,36,0.4); }
-
-       #help-bot-icon {
-        position: fixed;
-        bottom: 30px;
-        right: 30px;
-        width: 60px;
-        height: 60px;
-        background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 28px;
-        cursor: pointer;
-        box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
-        z-index: 999;
-        transition: all 0.3s ease;
-        border: 2px solid rgba(255, 255, 255, 0.2);
-        }
-
-        #help-bot-icon:hover {
-            transform: scale(1.1);
-            box-shadow: 0 8px 25px rgba(59, 130, 246, 0.6);
-        }
-
-        #help-bot-icon.pulsing {
-            animation: pulse 2s infinite;
-        }
-
-        @keyframes pulse {
-            0% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7); }
-            70% { box-shadow: 0 0 0 15px rgba(59, 130, 246, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); }
-        }
-
-        #hint-overlay {
-            display: none;
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            width: 400px;   
-            height: calc(100vh - 40px);
-            max-height: 90vh;
-            background: rgba(15, 23, 42, 0.98);
-            backdrop-filter: blur(20px);
-            border: 2px solid rgba(59, 130, 246, 0.4);
-            border-radius: 16px;
-            box-shadow: 0 0 40px rgba(59, 130, 246, 0.25);
-            z-index: 1000;
-            overflow: hidden;
-            padding: 0;
-            flex-direction: column;
-        }
-
-#hint-overlay.active {
-    display: flex;
-}
-
-        #hint-overlay.active {
-            display: flex;
-        }
-
-        .hint-card {
-            width: 100%;
-            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
-            border: none;
-            border-radius: 0;
-            padding: 0;
-            position: relative;
-            box-shadow: none;
-            height: 100%;
-            display: flex;
-            flex-direction: column;
-        }
-
-        .hint-header {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            padding: 20px;
-            border-bottom: 1px solid rgba(59, 130, 246, 0.2);
-            flex-shrink: 0;
-        }
-
-        .hint-robot-icon {
-            width: 45px;
-            height: 45px;
-            background: linear-gradient(135deg, #60a5fa 0%, #3b82f6 100%);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 22px;
-        }
-
-        .hint-title {
-            color: #60a5fa;
-            font-size: 18px;
-            font-weight: 700;
-            margin: 0;
-        }
-
-        .hint-subtitle {
-            color: #93c5fd;
-            font-size: 12px;
-            margin-top: 4px;
-            font-family: 'Courier New', monospace;
-        }
-
-        .hint-content-wrapper {
-            flex: 1;
-            overflow-y: auto;
-            padding: 20px;
-        }
-
-        .hint-section {
-            background: rgba(30, 41, 59, 0.5);
-            border: 1px solid rgba(59, 130, 246, 0.3);
-            border-radius: 12px;
-            padding: 16px;
-            margin-bottom: 16px;
-        }
-
-        .hint-section-title {
-            color: #fbbf24;
-            font-size: 13px;
-            font-weight: 600;
-            margin-bottom: 10px;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-
-        .hint-overview {
-            color: #e2e8f0;
-            font-size: 12px;
-            line-height: 1.6;
-        }
-
-        .hint-list {
-            list-style: none;
-            padding: 0;
-            margin: 0;
-        }
-
-        .hint-item {
-            color: #e2e8f0;
-            padding: 6px 0;
-            padding-left: 22px;
-            position: relative;
-            line-height: 1.5;
-            font-size: 12px;
-        }
-
-        .hint-item:before {
-            content: "💡";
-            position: absolute;
-            left: 0;
-            top: 6px;
-            font-size: 14px;
-        }
-
-        .hint-item.unlocked {
-            color: #a7f3d0;
-        }
-
-        .hint-actions {
-            display: flex;
-            justify-content: space-between;
-            margin-top: 16px;
-            gap: 8px;
-        }
-
-        .hint-btn {
-            padding: 8px 16px;
-            border-radius: 8px;
-            border: none;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            flex: 1;
-            text-align: center;
-            font-size: 12px;
-        }
-
-        .hint-btn:hover:not(:disabled) {
-            transform: translateY(-2px);
-        }
-
-        .hint-btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-
-        .hint-btn.primary {
-            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
-            color: white;
-        }
-
-        .hint-btn.secondary {
-            background: rgba(30, 41, 59, 0.8);
-            color: #e2e8f0;
-            border: 1px solid #4b5563;
-        }
-
-        /* AI Chat Section */
-        .ai-chat-section {
-            background: rgba(30, 41, 59, 0.3);
-            border: 1px solid rgba(59, 130, 246, 0.3);
-            border-radius: 12px;
-            padding: 0;
-            margin-bottom: 16px;
-            display: flex;
-            flex-direction: column;
-            max-height: 350px;
-        }
-
-        .chat-header-mini {
-            padding: 12px;
-            border-bottom: 1px solid rgba(59, 130, 246, 0.2);
-            color: #fbbf24;
-            font-size: 13px;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-
-        .chat-messages {
-            flex: 1;
-            overflow-y: auto;
-            padding: 12px;
-            max-height: 200px;
-        }
-
-        .chat-message {
-            margin-bottom: 10px;
-            animation: fadeIn 0.3s ease-out;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(8px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        .message-ai {
-            background: rgba(59, 130, 246, 0.15);
-            border: 1px solid rgba(59, 130, 246, 0.3);
-            border-radius: 10px;
-            padding: 10px;
-            margin-right: 15px;
-        }
-
-        .message-user {
-            background: rgba(16, 185, 129, 0.15);
-            border: 1px solid rgba(16, 185, 129, 0.3);
-            border-radius: 10px;
-            padding: 10px;
-            margin-left: 15px;
-            text-align: right;
-        }
-
-        .message-sender {
-            font-size: 10px;
-            font-weight: 600;
-            margin-bottom: 4px;
-            color: #93c5fd;
-        }
-
-        .message-user .message-sender {
-            color: #6ee7b7;
-        }
-
-        .message-content {
-            color: #e2e8f0;
-            font-size: 12px;
-            line-height: 1.5;
-            white-space: pre-wrap;
-        }
-
-        .chat-input-area {
-            background: rgba(2, 6, 23, 0.6);
-            border-top: 1px solid rgba(59, 130, 246, 0.2);
-            padding: 10px;
-        }
-
-        .chat-input-wrapper {
-            display: flex;
-            gap: 6px;
-        }
-
-        #chatInput {
-            flex: 1;
-            background: rgba(2, 6, 23, 0.8);
-            border: 1px solid rgba(59, 130, 246, 0.4);
-            border-radius: 6px;
-            padding: 8px 10px;
-            color: #e2e8f0;
-            font-size: 12px;
-            resize: none;
-            font-family: inherit;
-            max-height: 60px;
-        }
-
-        #chatInput:focus {
-            outline: none;
-            border-color: #3b82f6;
-        }
-
-        #sendChatBtn {
-            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-            color: white;
-            border: none;
-            border-radius: 6px;
-            padding: 8px 14px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            font-size: 12px;
-        }
-
-        #sendChatBtn:hover:not(:disabled) {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
-        }
-
-        #sendChatBtn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-
-        .typing-indicator {
-            display: none;
-            align-items: center;
-            gap: 4px;
-            padding: 10px;
-            background: rgba(59, 130, 246, 0.15);
-            border: 1px solid rgba(59, 130, 246, 0.3);
-            border-radius: 10px;
-            margin-right: 15px;
-            margin-bottom: 10px;
-        }
-
-        .typing-indicator.active {
-            display: flex;
-        }
-
-        .typing-dot {
-            width: 6px;
-            height: 6px;
-            background: #60a5fa;
-            border-radius: 50%;
-            animation: typing 1.4s infinite;
-        }
-
-        .typing-dot:nth-child(2) {
-            animation-delay: 0.2s;
-        }
-
-        .typing-dot:nth-child(3) {
-            animation-delay: 0.4s;
-        }
-
-        @keyframes typing {
-            0%, 60%, 100% { opacity: 0.3; transform: translateY(0); }
-            30% { opacity: 1; transform: translateY(-4px); }
-        }
-
-        .close-btn {
-            position: absolute;
-            top: 16px;
-            right: 16px;
-            width: 28px;
-            height: 28px;
-            background: rgba(30, 41, 59, 0.8);
-            border: 1px solid rgba(148, 163, 184, 0.3);
-            border-radius: 50%;
-            color: #94a3b8;
-            font-size: 16px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.2s ease;
-            z-index: 10;
-        }
-
-        .close-btn:hover {
-            background: rgba(239, 68, 68, 0.8);
-            border-color: #ef4444;
-            color: white;
-        }
-
-        .chat-messages::-webkit-scrollbar,
-        .hint-content-wrapper::-webkit-scrollbar {
-            width: 5px;
-        }
-
-        .chat-messages::-webkit-scrollbar-track,
-        .hint-content-wrapper::-webkit-scrollbar-track {
-            background: rgba(30, 41, 59, 0.3);
-            border-radius: 3px;
-        }
-
-        .chat-messages::-webkit-scrollbar-thumb,
-        .hint-content-wrapper::-webkit-scrollbar-thumb {
-            background: rgba(59, 130, 246, 0.5);
-            border-radius: 3px;
-        }
-
-        .chat-messages::-webkit-scrollbar-thumb:hover,
-        .hint-content-wrapper::-webkit-scrollbar-thumb:hover {
-            background: rgba(59, 130, 246, 0.7);
-        }
-    </style>
-
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Space Station Navigation</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #020617 0%, #0f172a 50%, #1e1b4b 100%);
+      height: 100vh; width: 100vw;
+      display: flex;
+      justify-content: center; align-items: center;
+      overflow: hidden; position: relative;
+    }
+
+    .stars { position: fixed; inset: 0; overflow: hidden; z-index: 0; }
+    .star { position: absolute; width: 2px; height: 2px; background: white; border-radius: 50%; animation: twinkle 3s infinite; }
+    @keyframes twinkle { 0%, 100% { opacity: 0.3; } 50% { opacity: 1; } }
+
+    body::before {
+      content: '';
+      position: fixed; top: 10%; left: 10%;
+      width: 500px; height: 500px;
+      background: radial-gradient(circle, rgba(6,182,212,0.15), transparent 70%);
+      filter: blur(80px); z-index: 0;
+    }
+    body::after {
+      content: '';
+      position: fixed; bottom: 10%; right: 10%;
+      width: 500px; height: 500px;
+      background: radial-gradient(circle, rgba(168,85,247,0.15), transparent 70%);
+      filter: blur(80px); z-index: 0;
+    }
+
+    .container {
+      position: relative;
+      width: 90vw; max-width: 900px;
+      height: 90vh; max-height: 850px;
+      background: rgba(15, 23, 42, 0.85);
+      backdrop-filter: blur(20px);
+      border-radius: 24px;
+      border: 2px solid rgba(6,182,212,0.4);
+      box-shadow: 0 0 60px rgba(6,182,212,0.25);
+      overflow: hidden;
+      z-index: 1;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .title-section {
+      width: 100%;
+      background: rgba(15,23,42,0.95);
+      padding: 14px 18px;
+      border-bottom: 2px solid rgba(6,182,212,0.3);
+      flex-shrink: 0;
+    }
+
+    .title-header { display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 6px; }
+    .title { color: #06b6d4; font-size: 24px; font-weight: 900; text-transform: uppercase; letter-spacing: 4px; }
+    .subtitle { text-align: center; color: rgba(103,232,249,0.7); font-size: 12px; font-family: 'Courier New', monospace; }
+
+    /* Progress Bar Styles */
+    .progress-bar-container {
+      background: rgba(2, 6, 23, 0.6);
+      padding: 12px 18px;
+      border-radius: 12px;
+      margin: 10px 18px 0 18px;
+      border: 1px solid rgba(6,182,212,0.2);
+      flex-shrink: 0;
+    }
+
+    .progress-header {
+      font-size: 10px;
+      color: #06b6d4;
+      letter-spacing: 3px;
+      margin-bottom: 6px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    .progress-main { display: flex; align-items: center; gap: 14px; margin-bottom: 8px; }
+    .progress-percentage { font-size: 32px; font-weight: 900; color: #10b981; min-width: 70px; transition: all 0.5s ease; }
+    .progress-status { font-size: 11px; color: rgba(103,232,249,0.6); letter-spacing: 2px; text-transform: uppercase; }
+
+    .progress-boxes { display: flex; gap: 6px; margin-bottom: 10px; flex-wrap: wrap; }
+    .progress-box {
+      width: 20px; height: 20px;
+      background: rgba(30, 41, 59, 0.5);
+      border: 1px solid rgba(6,182,212,0.3);
+      border-radius: 3px;
+      transition: all 0.3s ease;
+    }
+    .progress-box.completed { background: #10b981; border-color: #10b981; box-shadow: 0 0 10px rgba(16,185,129,0.5); }
+
+    .progress-stats { display: flex; justify-content: space-between; gap: 14px; }
+    .stat-item { text-align: center; flex: 1; }
+    .stat-value { font-size: 18px; font-weight: 900; color: #06b6d4; display: block; margin-bottom: 4px; transition: all 0.3s ease; }
+    .stat-label { font-size: 9px; color: rgba(103,232,249,0.5); letter-spacing: 1.5px; text-transform: uppercase; }
+
+    /* Badge shelf */
+    .badge-shelf {
+      display: flex;
+      gap: 8px;
+      margin-top: 10px;
+      padding-top: 10px;
+      border-top: 1px solid rgba(6, 182, 212, 0.2);
+      min-height: 40px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .badge-icon-small {
+      width: 28px;
+      height: 28px;
+      background: rgba(6, 182, 212, 0.2);
+      border: 1px solid rgba(6, 182, 212, 0.5);
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      transition: all 0.3s ease;
+      position: relative;
+    }
+
+    .badge-count-tag {
+      position: absolute;
+      bottom: -4px;
+      right: -4px;
+      background: #ef4444;
+      color: white;
+      font-size: 9px;
+      padding: 1px 4px;
+      border-radius: 10px;
+      font-weight: bold;
+      border: 1px solid #0f172a;
+      line-height: 1;
+    }
+
+    .badge-award-modal {
+      display: none;
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 2000;
+      background: rgba(15, 23, 42, 0.98);
+      backdrop-filter: blur(20px);
+      padding: 36px;
+      border-radius: 26px;
+      border: 2px solid #fbbf24;
+      text-align: center;
+      box-shadow: 0 0 80px rgba(251, 191, 36, 0.3);
+      width: 320px;
+    }
+    .badge-award-modal h2 { color: #fbbf24; letter-spacing: 2px; margin-bottom: 15px; }
+    #badgeAwardIconBig { font-size: 70px; margin: 20px 0; display: block; filter: drop-shadow(0 0 15px rgba(251,191,36,0.5)); }
+
+    .flying-badge {
+      position: fixed;
+      z-index: 3000;
+      font-size: 30px;
+      transition: all 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      pointer-events: none;
+    }
+
+    .maze-container {
+      flex-grow: 1;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      padding: 12px 18px 18px 18px;
+      min-height: 0;
+      overflow: hidden;
+    }
+
+    .maze {
+      width: 100%;
+      max-width: 750px;
+      height: auto;
+      aspect-ratio: 15 / 11;
+      max-height: 560px;
+      background: rgba(2, 6, 23, 0.5);
+      backdrop-filter: blur(10px);
+      border-radius: 20px;
+      border: 2px solid rgba(16,185,129,0.4);
+      display: grid;
+      grid-template-columns: repeat(15, 1fr);
+      grid-template-rows: repeat(11, 1fr);
+      padding: 8px;
+      gap: 3px;
+      margin: 0 auto;
+    }
+
+    /* Center letters/numbers in cells */
+    .cell {
+      border: 1px solid rgba(6,182,212,0.08);
+      border-radius: 2px;
+      position: relative;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      color:#e2e8f0;
+      font-weight:900;
+      font-size:12px;
+      user-select: none;
+    }
+    .wall { background: linear-gradient(135deg, #1e293b 0%, #334155 100%); }
+    .path { background: rgba(30, 41, 59, 0.3); }
+
+    .player {
+      background: radial-gradient(circle, #06b6d4 0%, #3b82f6 100%);
+      border-radius: 50%;
+      box-shadow: 0 0 20px rgba(6,182,212,0.8);
+      width: 80%;
+      height: 80%;
+      margin: 10%;
+      z-index: 20;
+      position: absolute;
+    }
+
+    .sector {
+      background: linear-gradient(135deg, rgba(251,191,36,0.3) 0%, rgba(217,119,6,0.3) 100%);
+      border-radius: 50%;
+      display: flex; justify-content: center; align-items: center;
+      color: #fbbf24; font-weight: 900; font-size: 14px;
+      width: 90%; height: 90%; margin: 5%;
+    }
+    .completed { background: #10b981 !important; color: white; }
+    .start { background: rgba(16,185,129,0.3); color: #10b981; }
+    .end { background: rgba(168,85,247,0.3); color: #a855f7; }
+
+    .controls-hint {
+      color: rgba(103,232,249,0.6);
+      font-size: 11px;
+      margin-top: 10px;
+      text-align: center;
+      font-family: 'Courier New', monospace;
+    }
+
+    .question-modal {
+      display: none;
+      position: absolute;
+      inset: 0;
+      z-index: 100;
+      justify-content: center;
+      align-items: center;
+      background: rgba(2, 6, 23, 0.92);
+      backdrop-filter: blur(14px);
+    }
+    .question-modal.active { display: flex; }
+
+    .question-card {
+      width: min(720px, 92vw);
+      background: #1e293b;
+      border: 1px solid #06b6d4;
+      border-radius: 24px;
+      padding: 26px;
+      position: relative;
+    }
+
+    .robot-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 45px);
+      grid-template-rows: repeat(5, 45px);
+      gap: 4px;
+      background: #0f172a;
+      padding: 10px;
+      border-radius: 8px;
+      margin: 10px auto;
+      justify-content: center;
+    }
+    .r-cell {
+      width: 45px; height: 45px;
+      background: rgba(30, 41, 59, 0.5);
+      border-radius: 4px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 24px;
+    }
+    .r-wall { background: #ef4444; }
+
+    textarea {
+      width: 100%;
+      height: 120px;
+      background: #020617;
+      color: #06b6d4;
+      border: 1px solid #06b6d4;
+      padding: 10px;
+      font-family: monospace;
+      border-radius: 8px;
+    }
+
+    .btn { padding: 12px 20px; border-radius: 12px; border: none; cursor: pointer; font-weight: 900; transition: all 0.2s ease; }
+    .btn:hover { transform: translateY(-2px); }
+    .btn-blue { background: #06b6d4; color: white; }
+    .btn-check { background: #fbbf24; color: black; width: 100%; margin-top: 10px; }
+    .btn-autofill { background: #a855f7; color: white; }
+    #feedback { margin-top: 10px; font-weight: 800; text-align: center; min-height: 20px; }
+
+    .summary-card { text-align: left; color: #e2e8f0; }
+    .summary-row { display: flex; justify-content: space-between; margin: 10px 0; border-bottom: 1px solid rgba(148,163,184,0.1); padding-bottom: 5px; }
+
+    #help-bot-icon {
+      position: fixed;
+      bottom: 30px;
+      right: 30px;
+      width: 60px; height: 60px;
+      background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 28px;
+      cursor: pointer;
+      box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
+      z-index: 999;
+      transition: all 0.3s ease;
+      border: 2px solid rgba(255, 255, 255, 0.2);
+    }
+    #help-bot-icon:hover { transform: scale(1.1); box-shadow: 0 8px 25px rgba(59, 130, 246, 0.6); }
+    #help-bot-icon.pulsing { animation: pulse 2s infinite; }
+
+    @keyframes pulse {
+      0% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7); }
+      70% { box-shadow: 0 0 0 15px rgba(59, 130, 246, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); }
+    }
+
+    #hint-overlay {
+      display: none;
+      position: fixed;
+      top: 20px; right: 20px;
+      width: 400px;
+      height: calc(100vh - 40px);
+      max-height: 90vh;
+      background: rgba(15, 23, 42, 0.98);
+      backdrop-filter: blur(20px);
+      border: 2px solid rgba(59, 130, 246, 0.4);
+      border-radius: 16px;
+      box-shadow: 0 0 40px rgba(59, 130, 246, 0.25);
+      z-index: 1000;
+      overflow: hidden;
+      padding: 0;
+      flex-direction: column;
+    }
+    #hint-overlay.active { display: flex; }
+
+    .hint-card { width: 100%; height: 100%; display: flex; flex-direction: column; background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); }
+    .hint-header { display: flex; align-items: center; gap: 15px; padding: 18px; border-bottom: 1px solid rgba(59, 130, 246, 0.2); flex-shrink: 0; }
+    .hint-robot-icon { width: 45px; height: 45px; background: linear-gradient(135deg, #60a5fa 0%, #3b82f6 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 22px; }
+    .hint-title { color: #60a5fa; font-size: 18px; font-weight: 700; margin: 0; }
+    .hint-subtitle { color: #93c5fd; font-size: 12px; margin-top: 4px; font-family: 'Courier New', monospace; }
+
+    .hint-content-wrapper { flex: 1; overflow-y: auto; padding: 18px; }
+    .hint-section { background: rgba(30, 41, 59, 0.5); border: 1px solid rgba(59, 130, 246, 0.3); border-radius: 12px; padding: 14px; margin-bottom: 14px; }
+    .hint-section-title { color: #fbbf24; font-size: 13px; font-weight: 600; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 1px; }
+    .hint-overview { color: #e2e8f0; font-size: 12px; line-height: 1.6; }
+
+    .hint-list { list-style: none; padding: 0; margin: 0; }
+    .hint-item { color: #e2e8f0; padding: 6px 0; padding-left: 22px; position: relative; line-height: 1.5; font-size: 12px; }
+    .hint-item:before { content: "💡"; position: absolute; left: 0; top: 6px; font-size: 14px; }
+    .hint-item.unlocked { color: #a7f3d0; }
+
+    .hint-actions { display: flex; justify-content: space-between; margin-top: 14px; gap: 8px; }
+    .hint-btn { padding: 8px 16px; border-radius: 8px; border: none; font-weight: 600; cursor: pointer; transition: all 0.2s ease; flex: 1; text-align: center; font-size: 12px; }
+    .hint-btn:hover:not(:disabled) { transform: translateY(-2px); }
+    .hint-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .hint-btn.primary { background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); color: white; }
+    .hint-btn.secondary { background: rgba(30, 41, 59, 0.8); color: #e2e8f0; border: 1px solid #4b5563; }
+
+    .ai-chat-section {
+      background: rgba(30, 41, 59, 0.3);
+      border: 1px solid rgba(59, 130, 246, 0.3);
+      border-radius: 12px;
+      padding: 0;
+      margin-bottom: 14px;
+      display: flex;
+      flex-direction: column;
+      max-height: 350px;
+    }
+    .chat-header-mini { padding: 12px; border-bottom: 1px solid rgba(59, 130, 246, 0.2); color: #fbbf24; font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; }
+    .chat-messages { flex: 1; overflow-y: auto; padding: 12px; max-height: 200px; }
+    .chat-message { margin-bottom: 10px; animation: fadeIn 0.3s ease-out; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+    .message-ai { background: rgba(59, 130, 246, 0.15); border: 1px solid rgba(59, 130, 246, 0.3); border-radius: 10px; padding: 10px; margin-right: 15px; }
+    .message-user { background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 10px; padding: 10px; margin-left: 15px; text-align: right; }
+    .message-sender { font-size: 10px; font-weight: 600; margin-bottom: 4px; color: #93c5fd; }
+    .message-user .message-sender { color: #6ee7b7; }
+    .message-content { color: #e2e8f0; font-size: 12px; line-height: 1.5; white-space: pre-wrap; }
+
+    .chat-input-area { background: rgba(2, 6, 23, 0.6); border-top: 1px solid rgba(59, 130, 246, 0.2); padding: 10px; }
+    .chat-input-wrapper { display: flex; gap: 6px; }
+    #chatInput {
+      flex: 1;
+      background: rgba(2, 6, 23, 0.8);
+      border: 1px solid rgba(59, 130, 246, 0.4);
+      border-radius: 6px;
+      padding: 8px 10px;
+      color: #e2e8f0;
+      font-size: 12px;
+      resize: none;
+      font-family: inherit;
+      max-height: 60px;
+    }
+    #chatInput:focus { outline: none; border-color: #3b82f6; }
+
+    #sendChatBtn {
+      background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+      color: white;
+      border: none;
+      border-radius: 6px;
+      padding: 8px 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-size: 12px;
+    }
+    #sendChatBtn:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4); }
+    #sendChatBtn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .typing-indicator {
+      display: none;
+      align-items: center;
+      gap: 4px;
+      padding: 10px;
+      background: rgba(59, 130, 246, 0.15);
+      border: 1px solid rgba(59, 130, 246, 0.3);
+      border-radius: 10px;
+      margin-right: 15px;
+      margin-bottom: 10px;
+    }
+    .typing-indicator.active { display: flex; }
+    .typing-dot { width: 6px; height: 6px; background: #60a5fa; border-radius: 50%; animation: typing 1.4s infinite; }
+    .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+    .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes typing {
+      0%, 60%, 100% { opacity: 0.3; transform: translateY(0); }
+      30% { opacity: 1; transform: translateY(-4px); }
+    }
+
+    .close-btn {
+      position: absolute;
+      top: 14px; right: 14px;
+      width: 28px; height: 28px;
+      background: rgba(30, 41, 59, 0.8);
+      border: 1px solid rgba(148, 163, 184, 0.3);
+      border-radius: 50%;
+      color: #94a3b8;
+      font-size: 16px;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: all 0.2s ease;
+      z-index: 10;
+    }
+    .close-btn:hover { background: rgba(239, 68, 68, 0.8); border-color: #ef4444; color: white; }
+
+    .chat-messages::-webkit-scrollbar,
+    .hint-content-wrapper::-webkit-scrollbar { width: 5px; }
+    .chat-messages::-webkit-scrollbar-track,
+    .hint-content-wrapper::-webkit-scrollbar-track { background: rgba(30, 41, 59, 0.3); border-radius: 3px; }
+    .chat-messages::-webkit-scrollbar-thumb,
+    .hint-content-wrapper::-webkit-scrollbar-thumb { background: rgba(59, 130, 246, 0.5); border-radius: 3px; }
+    .chat-messages::-webkit-scrollbar-thumb:hover,
+    .hint-content-wrapper::-webkit-scrollbar-thumb:hover { background: rgba(59, 130, 246, 0.7); }
+  </style>
 </head>
+
 <body>
-    <div class="stars" id="stars"></div>
+  <div class="stars" id="stars"></div>
 
-<!-- NEW: CENTERED BADGE POPUP -->
-    <div id="badgeAwardModal" class="badge-award-modal">
-        <h2 id="badgeAwardTitle">MODULE MASTER!</h2>
-        <span id="badgeAwardIconBig">🏆</span>
-        <p id="badgeAwardName" style="color: rgba(103,232,249,0.8); font-size: 14px; margin-bottom: 25px;">Logic Training Complete</p>
-        <button class="btn btn-blue" id="claimBadgeBtn" style="width: 100%;">Claim Badge</button>
+  <div id="badgeAwardModal" class="badge-award-modal">
+    <h2 id="badgeAwardTitle">MODULE MASTER!</h2>
+    <span id="badgeAwardIconBig">🏆</span>
+    <p id="badgeAwardName" style="color: rgba(103,232,249,0.8); font-size: 14px; margin-bottom: 25px;">
+      Logic Training Complete
+    </p>
+    <button class="btn btn-blue" id="claimBadgeBtn" style="width: 100%;">Claim Badge</button>
+  </div>
+
+  <div class="container">
+    <div class="title-section">
+      <div class="title-header">
+        <div class="title-icon">🚀</div>
+        <div class="title">Station Navigation</div>
+      </div>
+      <div class="subtitle">Cadet Training Protocol // AI Assistant Enabled</div>
     </div>
 
-    <div class="container">
-        <div class="title-section">
-            <div class="title-header">
-                <div class="title-icon">🚀</div>
-                <div class="title">Station Navigation</div>
-            </div>
-            <div class="subtitle">Cadet Training Protocol // AI Assistant Enabled</div>
+    <div class="progress-bar-container">
+      <div class="progress-header">STATION_INTEGRITY_MAP</div>
+
+      <div class="progress-main">
+        <div class="progress-percentage" id="progressPercentage">0%</div>
+        <div class="progress-status" id="progressStatus">PROTOCOL_SYNCED</div>
+      </div>
+
+      <div class="progress-boxes" id="progressBoxes">
+        <div class="progress-box"></div><div class="progress-box"></div><div class="progress-box"></div>
+        <div class="progress-box"></div><div class="progress-box"></div><div class="progress-box"></div>
+        <div class="progress-box"></div><div class="progress-box"></div><div class="progress-box"></div>
+        <div class="progress-box"></div><div class="progress-box"></div><div class="progress-box"></div>
+        <div class="progress-box"></div><div class="progress-box"></div><div class="progress-box"></div>
+      </div>
+
+      <div class="badge-shelf" id="badgeShelf">
+        <span style="color: rgba(103,232,249,0.3); font-size: 9px; letter-spacing: 1px;">EARNED_BADGES: [EMPTY]</span>
+      </div>
+
+      <div class="progress-stats">
+        <div class="stat-item">
+          <span class="stat-value" id="statSectors">0/5</span>
+          <span class="stat-label">SECTORS</span>
         </div>
-
-        <!-- Progress Bar Component -->
-        <div class="progress-bar-container">
-            <div class="progress-header">STATION_INTEGRITY_MAP</div>
-            <div class="progress-main">
-                <div class="progress-percentage" id="progressPercentage">0%</div>
-                <div class="progress-status" id="progressStatus">PROTOCOL_SYNCED</div>
-            </div>
-            <div class="progress-boxes" id="progressBoxes">
-                <div class="progress-box"></div>
-                <div class="progress-box"></div>
-                <div class="progress-box"></div>
-                <div class="progress-box"></div>
-                <div class="progress-box"></div>
-                <div class="progress-box"></div>
-                <div class="progress-box"></div>
-                <div class="progress-box"></div>
-                <div class="progress-box"></div>
-                <div class="progress-box"></div>
-                <div class="progress-box"></div>
-                <div class="progress-box"></div>
-                <div class="progress-box"></div>
-                <div class="progress-box"></div>
-                <div class="progress-box"></div>
-            </div>
-
-             <!-- NEW: CUMULATIVE BADGE LIST NEAR PROGRESS BAR -->
-            <div class="badge-shelf" id="badgeShelf">
-                 <span style="color: rgba(103,232,249,0.3); font-size: 9px; letter-spacing: 1px;">EARNED_BADGES: [EMPTY]</span>
-            </div>
-
-            <div class="progress-stats">
-                <div class="stat-item">
-                    <span class="stat-value" id="statSectors">0/5</span>
-                    <span class="stat-label">SECTORS</span>
-                </div>
-                <div class="stat-item">
-                    <span class="stat-value" id="statLocked">5</span>
-                    <span class="stat-label">LOCKED</span>
-                </div>
-                <div class="stat-item">
-                    <span class="stat-value" id="statConnected">CONNECTED</span>
-                    <span class="stat-label">DATABASE</span>
-                </div>
-            </div>
+        <div class="stat-item">
+          <span class="stat-value" id="statLocked">5</span>
+          <span class="stat-label">LOCKED</span>
         </div>
-
-        <div class="maze-container">
-            <div class="maze" id="maze"></div>
-            <div class="controls-hint">Use arrow keys to navigate • Click 🤖 for AI help</div>
+        <div class="stat-item">
+          <span class="stat-value" id="statConnected">CONNECTED</span>
+          <span class="stat-label">DATABASE</span>
         </div>
-
-        <div class="question-modal" id="questionModal">
-            <div class="question-card">
-                <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 20px;">
-                    <div id="sectorBadge" style="background: #fbbf24; width: 45px; height: 45px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: black; font-weight: bold;">1</div>
-                    <div>
-                        <h2 id="mTitle" style="color: #06b6d4; text-transform: uppercase;">Sector 1</h2>
-                        <p id="mSubtitle" style="color: rgba(103,232,249,0.7); font-family: monospace; font-size: 12px;">Navigation Task</p>
-                    </div>
-                </div>
-
-                <div id="moduleContent"></div>
-                <div id="feedback"></div>
-
-                <div style="display: flex; gap: 10px; margin-top: 20px;">
-                    <button class="btn btn-blue" id="nextBtn">Next Module →</button>
-                    <button class="btn btn-autofill" id="autofillBtn">✨ Autofill</button>
-                    <button class="btn" id="backBtn" style="display:none; background: #10b981; color: white;">Calculate Results</button>
-                </div>
-            </div>
-        </div>
+      </div>
     </div>
 
-    <div id="help-bot-icon">🤖</div>
-
-    <div id="hint-overlay">
-        <div class="close-btn" id="closeAiBtn">✕</div>
-        
-        <div class="hint-card">
-            <div class="hint-header">
-                <div class="hint-robot-icon">🤖</div>
-                <div>
-                    <h2 class="hint-title" id="hintTitle">AI Assistant</h2>
-                    <p class="hint-subtitle" id="hintSubtitle">Available for current question</p>
-                </div>
-            </div>
-            
-            <div class="hint-content-wrapper">
-                <div class="hint-section">
-                    <h3 class="hint-section-title">Learning Overview</h3>
-                    <p class="hint-overview" id="hintOverview"></p>
-                </div>
-                
-                <div class="hint-section">
-                    <h3 class="hint-section-title">Quick Hints</h3>
-                    <ul class="hint-list" id="hintSteps"></ul>
-                    <div class="hint-actions">
-                        <button class="hint-btn secondary" id="prevHintBtn">← Prev</button>
-                        <button class="hint-btn secondary" id="nextHintBtn">Next →</button>
-                    </div>
-                </div>
-
-                <div class="ai-chat-section">
-                    <div class="chat-header-mini">💬 Ask AI Questions</div>
-                    
-                    <div class="chat-messages" id="chatMessages">
-                        <div class="chat-message message-ai">
-                            <div class="message-sender">AI Assistant 🤖</div>
-                            <div class="message-content">Hi! I'm here to help you learn. Ask me anything about this question! 🌟</div>
-                        </div>
-                    </div>
-                    
-                    <div class="typing-indicator" id="typingIndicator">
-                        <div class="typing-dot"></div>
-                        <div class="typing-dot"></div>
-                        <div class="typing-dot"></div>
-                        <span style="margin-left: 6px; color: #60a5fa; font-size: 11px;">AI thinking...</span>
-                    </div>
-                    
-                    <div class="chat-input-area">
-                        <div class="chat-input-wrapper">
-                            <textarea id="chatInput" placeholder="Type your question..." rows="1"></textarea>
-                            <button id="sendChatBtn">Send</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
+    <div class="maze-container">
+      <div class="maze" id="maze"></div>
+      <div class="controls-hint">Use arrow keys to navigate • Click 🤖 for AI help</div>
     </div>
+
+    <div class="question-modal" id="questionModal">
+      <div class="question-card">
+        <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 20px;">
+          <div id="sectorBadge" style="background: #fbbf24; width: 45px; height: 45px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: black; font-weight: bold;">1</div>
+          <div>
+            <h2 id="mTitle" style="color: #06b6d4; text-transform: uppercase;">Sector 1</h2>
+            <p id="mSubtitle" style="color: rgba(103,232,249,0.7); font-family: monospace; font-size: 12px;">Navigation Task</p>
+          </div>
+        </div>
+
+        <div id="moduleContent"></div>
+        <div id="feedback"></div>
+
+        <div style="display: flex; gap: 10px; margin-top: 20px;">
+          <button class="btn btn-blue" id="nextBtn">Next Module →</button>
+          <button class="btn btn-autofill" id="autofillBtn">✨ Autofill</button>
+          <button class="btn" id="backBtn" style="display:none; background: #10b981; color: white;">Calculate Results</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="help-bot-icon">🤖</div>
+
+  <div id="hint-overlay">
+    <div class="close-btn" id="closeAiBtn">✕</div>
+
+    <div class="hint-card">
+      <div class="hint-header">
+        <div class="hint-robot-icon">🤖</div>
+        <div>
+          <h2 class="hint-title" id="hintTitle">AI Assistant</h2>
+          <p class="hint-subtitle" id="hintSubtitle">Available for current question</p>
+        </div>
+      </div>
+
+      <div class="hint-content-wrapper">
+        <div class="hint-section">
+          <h3 class="hint-section-title">Learning Overview</h3>
+          <p class="hint-overview" id="hintOverview"></p>
+        </div>
+
+        <div class="hint-section">
+          <h3 class="hint-section-title">Quick Hints</h3>
+          <ul class="hint-list" id="hintSteps"></ul>
+          <div class="hint-actions">
+            <button class="hint-btn secondary" id="prevHintBtn">← Prev</button>
+            <button class="hint-btn secondary" id="nextHintBtn">Next →</button>
+          </div>
+        </div>
+
+        <div class="ai-chat-section">
+          <div class="chat-header-mini">💬 Ask AI Questions</div>
+
+          <div class="chat-messages" id="chatMessages">
+            <div class="chat-message message-ai">
+              <div class="message-sender">AI Assistant 🤖</div>
+              <div class="message-content">Hi! I'm here to help you learn. Ask me anything about this question! 🌟</div>
+            </div>
+          </div>
+
+          <div class="typing-indicator" id="typingIndicator">
+            <div class="typing-dot"></div>
+            <div class="typing-dot"></div>
+            <div class="typing-dot"></div>
+            <span style="margin-left: 6px; color: #60a5fa; font-size: 11px;">AI thinking...</span>
+          </div>
+
+          <div class="chat-input-area">
+            <div class="chat-input-wrapper">
+              <textarea id="chatInput" placeholder="Type your question..." rows="1"></textarea>
+              <button id="sendChatBtn">Send</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 
 <script type="module">
-    // IMPORTANT FIX:
-    // If your config import 404s on localhost, the ENTIRE module won't run.
-    // Dynamic import keeps the page working even if the backend config isn't available.
-    let getRobopURI, fetchOptions;
+  // Config import safe fallback
+  let getRobopURI, fetchOptions;
+  try {
+    const mod = await import('{{ "/assets/js/api/config.js" | relative_url }}?v=20260123_1');
+    getRobopURI = mod.getRobopURI;
+    fetchOptions = mod.fetchOptions;
+  } catch (e) {
+    console.warn("config.js import failed (localhost fallback active):", e);
+    getRobopURI = async () => "";
+    fetchOptions = {};
+  }
+
+  const robopURI = await getRobopURI();
+
+  // Make sure cookies/sessions work across requests (important for Flask session auth)
+  const AUTH = {
+    ...fetchOptions,
+    credentials: (fetchOptions && fetchOptions.credentials) ? fetchOptions.credentials : "include"
+  };
+
+  const API_URL = `${robopURI}/api/robop`;
+  const PSEUDOCODE_BANK_URL = `${robopURI}/api/pseudocode_bank`;
+
+  window.API_URL = API_URL;
+  window.PSEUDOCODE_BANK_URL = PSEUDOCODE_BANK_URL;
+  window.authOptions = AUTH;
+
+  // local progress
+  const PROGRESS_KEY = "maze_progress_v1";
+  const completedSectors = new Set();
+
+  function saveProgress(sector, question, score) {
+    try {
+      const current = JSON.parse(localStorage.getItem(PROGRESS_KEY) || "{}");
+      current.completedSectors = Array.from(completedSectors);
+      current.lastSector = sector;
+      current.lastQuestion = question;
+      current.lastScore = score;
+      localStorage.setItem(PROGRESS_KEY, JSON.stringify(current));
+    } catch (e) {
+      console.warn("saveProgress failed:", e);
+    }
+  }
+  function loadProgress() {
+    try {
+      const current = JSON.parse(localStorage.getItem(PROGRESS_KEY) || "{}");
+      const arr = current.completedSectors || [];
+      arr.forEach(s => completedSectors.add(Number(s)));
+    } catch (e) {
+      console.warn("loadProgress failed:", e);
+    }
+  }
+
+  // stars
+  const starsContainer = document.getElementById('stars');
+  for (let i = 0; i < 150; i++) {
+    const star = document.createElement('div');
+    star.className = 'star';
+    star.style.left = Math.random() * 100 + '%';
+    star.style.top = Math.random() * 100 + '%';
+    starsContainer.appendChild(star);
+  }
+
+  // UI elements
+  const mazeEl = document.getElementById('maze');
+  const modal = document.getElementById('questionModal');
+  const mContent = document.getElementById('moduleContent');
+  const feedback = document.getElementById('feedback');
+  const nextBtn = document.getElementById('nextBtn');
+  const backBtn = document.getElementById('backBtn');
+  const autofillBtn = document.getElementById('autofillBtn');
+
+  const helpBotIcon = document.getElementById('help-bot-icon');
+  const hintOverlay = document.getElementById('hint-overlay');
+  const closeAiBtn = document.getElementById('closeAiBtn');
+  const hintTitle = document.getElementById('hintTitle');
+  const hintSubtitle = document.getElementById('hintSubtitle');
+  const hintOverview = document.getElementById('hintOverview');
+  const hintSteps = document.getElementById('hintSteps');
+  const prevHintBtn = document.getElementById('prevHintBtn');
+  const nextHintBtn = document.getElementById('nextHintBtn');
+
+  const chatMessages = document.getElementById('chatMessages');
+  const chatInput = document.getElementById('chatInput');
+  const sendChatBtn = document.getElementById('sendChatBtn');
+  const typingIndicator = document.getElementById('typingIndicator');
+
+  // game state
+  let moduleAttempts = [0, 0, 0];
+  const weights = [0.5, 0.3, 0.2];
+  let currentSectorNum = 0;
+  let currentQuestion = 0;
+  let usedAutofill = false;
+  let finalScore = 0;
+
+  // pseudocode state
+  let currentPseudo = { level: null, question_id: null, question: null };
+
+  // badge system
+  let badgesEarned = [];
+  const badgeIcons = ["🤖", "📜", "🧠"];
+  const badgeNames = ["Logic Pilot", "Syntax Architect", "Theory Master"];
+  const badgeShelf = document.getElementById('badgeShelf');
+  const badgeModal = document.getElementById('badgeAwardModal');
+  const claimBtn = document.getElementById('claimBadgeBtn');
+
+  function awardBadge(s, m) {
+    const id = `S${s}-M${m}`;
+    if (badgesEarned.includes(id)) return;
+
+    document.getElementById('badgeAwardIconBig').textContent = badgeIcons[m];
+    document.getElementById('badgeAwardTitle').textContent = `${badgeNames[m].toUpperCase()} EARNED!`;
+    document.getElementById('badgeAwardName').textContent = `Sector ${s} Module Completed Successfully.`;
+    badgeModal.style.display = 'block';
+
+    claimBtn.onclick = () => {
+      badgesEarned.push(id);
+      badgeModal.style.display = 'none';
+      animateBadgeToShelf(badgeIcons[m]);
+      updateBadgeUI();
+      updateBackendBadges(id, s, m);
+    };
+  }
+
+  function animateBadgeToShelf(icon) {
+    const flyer = document.createElement('div');
+    flyer.className = 'flying-badge';
+    flyer.textContent = icon;
+    flyer.style.left = '50%';
+    flyer.style.top = '50%';
+    flyer.style.transform = 'translate(-50%, -50%)';
+    document.body.appendChild(flyer);
+
+    const targetRect = badgeShelf.getBoundingClientRect();
+    setTimeout(() => {
+      flyer.style.left = targetRect.left + (badgesEarned.length * 20) + 'px';
+      flyer.style.top = (targetRect.top + 10) + 'px';
+      flyer.style.transform = 'scale(0.4)';
+      flyer.style.opacity = '0';
+    }, 50);
+
+    setTimeout(() => flyer.remove(), 850);
+  }
+
+  async function updateBackendBadges(id, s, m) {
+    try {
+      await fetch(`${robopURI}/api/robop/assign_badge`, {
+        ...window.authOptions,
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          badge_name: id,
+          sector_id: s,
+          module_id: m,
+          attempts: moduleAttempts[m],
+          used_autofill: usedAutofill
+        })
+      });
+    } catch (e) {
+      console.warn("Backend not ready: Mocking badge save.");
+    }
+  }
+
+  async function updateBadgeUI() {
+    try {
+      const response = await fetch(`${robopURI}/api/robop/fetch_badges`, window.authOptions);
+      if (!response.ok) return;
+      const badges = await response.json();
+
+      badgeShelf.innerHTML = '';
+
+      const summary = {
+        "Autofill Whiz": { icon: "⚡", count: 0 },
+        "Platinum": { icon: "💎", count: 0 },
+        "Gold": { icon: "🥇", count: 0 },
+        "Silver": { icon: "🥈", count: 0 },
+        "Participation": { icon: "🎖️", count: 0 }
+      };
+
+      for (let i = 0; i < badges.length; i++) {
+        const b = badges[i];
+        if (b.autofill === true || b.autofill === "true") summary["Autofill Whiz"].count++;
+        else if (b.attempts === 1) summary["Platinum"].count++;
+        else if (b.attempts === 2) summary["Gold"].count++;
+        else if (b.attempts === 3) summary["Silver"].count++;
+        else summary["Participation"].count++;
+      }
+
+      Object.keys(summary).forEach(key => {
+        const data = summary[key];
+        if (data.count > 0) {
+          const el = document.createElement('div');
+          el.className = 'badge-icon-small';
+          el.textContent = data.icon;
+          el.title = `${key}: ${data.count}`;
+
+          const countTag = document.createElement('span');
+          countTag.className = 'badge-count-tag';
+          countTag.textContent = data.count;
+          el.appendChild(countTag);
+
+          badgeShelf.appendChild(el);
+        }
+      });
+
+      if (badges.length === 0) {
+        badgeShelf.innerHTML = '<span style="color: rgba(103,232,249,0.3); font-size: 9px;">EARNED_BADGES: [EMPTY]</span>';
+      }
+    } catch (error) {
+      console.error("Error updating badge UI:", error);
+    }
+  }
+
+  // teacher data (same as your original)
+  const teacherData = {
+    1: { title: "Stop 1: Training",
+      msg: "Robot code is a pseudocode-style language with four commands—MOVE_FORWARD(), ROTATE_LEFT(), ROTATE_RIGHT(), and CAN_MOVE(direction)—used to control a robot through a maze. Pseudocode: Use plain-language, step-by-step logic (variables, conditionals, loops, and logical flow) to describe how your algorithm should work before worrying about strict programming syntax. Computational thinking: break the problem into small rules, test your logic, and iterate based on what you observe.",
+      hints: [
+        ["HINT 1: You need only one command for this task.","HINT 2: Use the MOVE_FORWARD() command.","HINT 3: Just write: MOVE_FORWARD()"],
+        ["HINT 1: Initialize sum ← 0 before the loop","HINT 2: FOR EACH num IN nums, do sum ← sum + num","HINT 3: After loop, RETURN sum / LENGTH(nums)"],
+        ["HINT 1: Binary is base-2 number system","HINT 2: Each digit represents a power of 2","HINT 3: 1101 = 1×8 + 1×4 + 0×2 + 1×1 = 13"]
+      ] },
+    2: { title: "Stop 2: Training",
+      msg: "Robot Code: Use simple, readable command blocks to control the robot and debug one movement decision at a time. Pseudocode: In the code runner, write College Board–level pseudocode solutions (conditionals, variables, algorithm development, and logical flow) and notice how different logical choices change the program's behavior as you progress through the maze. Computational thinking: practice structured problem-solving by tracing steps, checking edge cases, and improving your solution until it works.",
+      hints: [
+        ["HINT 1: This requires a rotation command, not a movement command.","HINT 2: Use ROTATE_RIGHT() to turn the robot 90 degrees clockwise","HINT 3: Just write: ROTATE_RIGHT()"],
+        ["HINT 1: Initialize count ← 0 before the loop","HINT 2: FOR EACH value IN nums, check IF value > threshold","HINT 3: When condition is true, do count ← count + 1","HINT 4: RETURN count after the loop completes"],
+        ["HINT 1: AND logic requires both inputs to be true","HINT 2: Truth table: true AND true = true, others = false","HINT 3: Think of it like a strict requirement"]
+      ] },
+    3: { title: "Stop 3: Training",
+      msg: "Robot Code: Combine multiple commands (MOVE_FORWARD, ROTATE_LEFT, ROTATE_RIGHT) to navigate complex paths and use CAN_MOVE(direction) to check for obstacles before moving. Pseudocode: Apply variables and assignment operators to store values, then use conditional statements (IF-ELSE) to make decisions based on those values in your College Board–style solutions. Computational thinking: identify patterns in the maze, create reusable logic blocks, and test your algorithm with different scenarios to ensure it handles all possible paths.",
+      hints: [
+        ["HINT 1: You need to move forward twice.","HINT 2: Use MOVE_FORWARD() two times in a row.","HINT 3: Write: MOVE_FORWARD() MOVE_FORWARD()"],
+        ["HINT 1: Set max ← nums[1] (first element)","HINT 2: Loop through remaining elements starting at index 2","HINT 3: IF nums[i] > max, update max ← nums[i]","HINT 4: RETURN max after checking all elements"],
+        ["HINT 1: Abstraction hides complex details","HINT 2: It focuses on essential features only","HINT 3: Like using a function without knowing implementation"]
+      ] },
+    4: { title: "Stop 4: Training",
+      msg: "Robot Code: Master complex navigation by chaining conditional checks with CAN_MOVE() and creating efficient movement sequences. Pseudocode: Implement loops (REPEAT and REPEAT UNTIL) to avoid repetitive code, and combine them with conditionals to create dynamic algorithms that adapt to changing conditions. Computational thinking: analyze the problem systematically, decompose it into smaller sub-problems, and optimize your solution by reducing redundant steps while maintaining correctness.",
+      hints: [
+        ["HINT 1: This requires two commands in sequence: move, then rotate","HINT 2: First MOVE_FORWARD(), then ROTATE_LEFT()","HINT 3: Write: MOVE_FORWARD() ROTATE_LEFT()"],
+        ["HINT 1: Use FOR i FROM 1 TO LENGTH(words) for index-based loop","HINT 2: Check IF words[i] = target","HINT 3: When match found, set words[i] ← replacement","HINT 4: RETURN words at the end"],
+        ["HINT 1: IP stands for Internet Protocol","HINT 2: It handles routing of data packets","HINT 3: Like a postal system for internet data"]
+      ] },
+    5: { title: "Stop 5: Training",
+      msg: "Robot Code: Apply all four commands strategically to solve the most challenging maze configurations, planning your entire route before executing. Pseudocode: Create comprehensive algorithms using variables, conditionals, loops, and logical operators (AND, OR, NOT) that mirror real AP CSP exam questions. Computational thinking: demonstrate mastery by developing efficient, elegant solutions that show deep understanding of algorithm design, abstraction, and the relationship between pseudocode logic and actual program execution.",
+      hints: [
+        ["HINT 1: You need to move forward three times.","HINT 2: Use MOVE_FORWARD() three times in a row.","HINT 3: Write: MOVE_FORWARD() MOVE_FORWARD() MOVE_FORWARD()"],
+        ["HINT 1: Create evens ← empty list before loop","HINT 2: FOR EACH num IN nums, check IF num MOD 2 = 0","HINT 3: When num is even, use APPEND(evens, num)","HINT 4: RETURN evens after processing all numbers"],
+        ["HINT 1: Heuristics are rule-of-thumb approaches","HINT 2: They provide good-enough solutions quickly","HINT 3: Like estimating instead of calculating exactly"]
+      ] }
+  };
+
+  // AI chat
+  let currentHintLevel = 0;
+  let conversationHistory = [];
+
+  async function sendMessageToAI(userMessage) {
+    try {
+      const response = await fetch(`${API_URL}/ai_chat`, {
+        ...window.authOptions,
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sector_id: currentSectorNum,
+          question_num: currentQuestion,
+          user_message: userMessage,
+          conversation_history: conversationHistory
+        })
+      });
+
+      const data = await response.json();
+      if (!response.ok || !data.success) throw new Error(data.message || 'Failed to get AI response');
+      return data.ai_response;
+    } catch (error) {
+      console.error('AI Chat Error:', error);
+      return "Sorry, I'm having trouble connecting right now. Try again, or use the hint steps above.";
+    }
+  }
+
+  function addChatMessage(content, isAI = true) {
+    const messageDiv = document.createElement('div');
+    messageDiv.className = `chat-message ${isAI ? 'message-ai' : 'message-user'}`;
+    messageDiv.innerHTML = `
+      <div class="message-sender">${isAI ? 'AI Assistant 🤖' : 'You'}</div>
+      <div class="message-content">${content}</div>
+    `;
+    chatMessages.appendChild(messageDiv);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+
+    conversationHistory.push({ role: isAI ? 'assistant' : 'user', content });
+    if (conversationHistory.length > 20) conversationHistory = conversationHistory.slice(-20);
+  }
+
+  async function handleSendMessage() {
+    const message = chatInput.value.trim();
+    if (!message) return;
+
+    addChatMessage(message, false);
+    chatInput.value = '';
+
+    typingIndicator.classList.add('active');
+    sendChatBtn.disabled = true;
 
     try {
-        const mod = await import('{{ "/assets/js/api/config.js" | relative_url }}?v=20260123_1');
-        getRobopURI = mod.getRobopURI;
-        fetchOptions = mod.fetchOptions;
+      const aiResponse = await sendMessageToAI(message);
+      typingIndicator.classList.remove('active');
+      addChatMessage(aiResponse, true);
     } catch (e) {
-        console.warn("config.js import failed (localhost fallback active):", e);
-        getRobopURI = async () => "";
-        fetchOptions = {};
+      typingIndicator.classList.remove('active');
+      addChatMessage("I encountered an error. Try again.", true);
+    } finally {
+      sendChatBtn.disabled = false;
+      chatInput.focus();
     }
+  }
 
-    const robopURI = await getRobopURI();
-    const API_URL = `${robopURI}/api/robop`;
-    const PSEUDOCODE_BANK_URL = `${robopURI}/api/pseudocode_bank`;
+  function resetChatForNewQuestion() {
+    conversationHistory = [];
+    chatMessages.innerHTML = `
+      <div class="chat-message message-ai">
+        <div class="message-sender">AI Assistant 🤖</div>
+        <div class="message-content">Hi! I'm here to help you with Sector ${currentSectorNum}, Question ${currentQuestion + 1}. Ask me anything! 🌟</div>
+      </div>
+    `;
+  }
 
-    window.API_URL = API_URL;
-    window.PSEUDOCODE_BANK_URL = PSEUDOCODE_BANK_URL;
-    window.authOptions = fetchOptions;
+  // hint panel
+  function showAIAssistant() {
+    if (!modal.classList.contains('active')) return;
 
-    // FIX: define these so closeSector doesn't crash later
-    const PROGRESS_KEY = "maze_progress_v1";
-    function saveProgress(sector, question, score) {
-        try {
-            const current = JSON.parse(localStorage.getItem(PROGRESS_KEY) || "{}");
-            current.completedSectors = Array.from(completedSectors);
-            current.lastSector = sector;
-            current.lastQuestion = question;
-            current.lastScore = score;
-            localStorage.setItem(PROGRESS_KEY, JSON.stringify(current));
-        } catch (e) {
-            console.warn("saveProgress failed:", e);
-        }
-    }
-    function loadProgress() {
-        try {
-            const current = JSON.parse(localStorage.getItem(PROGRESS_KEY) || "{}");
-            const arr = current.completedSectors || [];
-            arr.forEach(s => completedSectors.add(Number(s)));
-        } catch (e) {
-            console.warn("loadProgress failed:", e);
-        }
-    }
+    const sectorData = teacherData[currentSectorNum];
+    if (!sectorData) return;
 
-    let currentPseudo = {
-        level: null,
-        question_id: null,
-        question: null
-    };
+    currentHintLevel = 0;
+    hintTitle.textContent = `Sector ${currentSectorNum} AI Assistant`;
+    hintSubtitle.textContent = `Question ${currentQuestion + 1} of 3`;
+    hintOverview.textContent = sectorData.msg;
+    updateHintDisplay();
+    hintOverlay.classList.add('active');
+  }
+  function closeAIAssistant() { hintOverlay.classList.remove('active'); }
 
-    // --- BADGE SYSTEM DATA ---
-    let badgesEarned = []; // List of IDs e.g., ["S1-M0"]
-    const badgeIcons = ["🤖", "📜", "🧠"]; // Robot, Pseudo, MCQ
-    const badgeNames = ["Logic Pilot", "Syntax Architect", "Theory Master"];
-    const badgeShelf = document.getElementById('badgeShelf');
-    let userProgress = null;
-    const badgeModal = document.getElementById('badgeAwardModal');
-    const claimBtn = document.getElementById('claimBadgeBtn');
+  function updateHintDisplay() {
+    const sectorData = teacherData[currentSectorNum];
+    if (!sectorData || !sectorData.hints[currentQuestion]) return;
 
-    const starsContainer = document.getElementById('stars');
-    for (let i = 0; i < 150; i++) {
-        const star = document.createElement('div');
-        star.className = 'star';
-        star.style.left = Math.random() * 100 + '%';
-        star.style.top = Math.random() * 100 + '%';
-        starsContainer.appendChild(star);
-    }
+    const hints = sectorData.hints[currentQuestion];
+    hintSteps.innerHTML = '';
 
-    const mazeEl = document.getElementById('maze');
-    const modal = document.getElementById('questionModal');
-    const mContent = document.getElementById('moduleContent');
-    const feedback = document.getElementById('feedback');
-    const nextBtn = document.getElementById('nextBtn');
-    const backBtn = document.getElementById('backBtn');
-    const autofillBtn = document.getElementById('autofillBtn');
-    
-    const helpBotIcon = document.getElementById('help-bot-icon');
-    const hintOverlay = document.getElementById('hint-overlay');
-    const closeAiBtn = document.getElementById('closeAiBtn');
-    const hintTitle = document.getElementById('hintTitle');
-    const hintSubtitle = document.getElementById('hintSubtitle');
-    const hintOverview = document.getElementById('hintOverview');
-    const hintSteps = document.getElementById('hintSteps');
-    const prevHintBtn = document.getElementById('prevHintBtn');
-    const nextHintBtn = document.getElementById('nextHintBtn');
-    
-    const chatMessages = document.getElementById('chatMessages');
-    const chatInput = document.getElementById('chatInput');
-    const sendChatBtn = document.getElementById('sendChatBtn');
-    const typingIndicator = document.getElementById('typingIndicator');
-
-    let moduleAttempts = [0, 0, 0];
-    const weights = [0.5, 0.3, 0.2];
-    let currentSectorNum = 0;
-    let currentQuestion = 0;
-    const completedSectors = new Set();
-    let usedAutofill = false;
-
-    // FIX: make this exist so closeSector can always save something
-    let finalScore = 0;
-    
-    let currentHintLevel = 0;
-    let conversationHistory = [];
-
-    const mazeLayout = [
-        [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
-        [2,1,1,1,4,1,1,1,5,1,1,1,6,1,1], 
-        [0,1,0,1,0,1,0,1,0,1,0,1,0,1,0],
-        [0,1,1,1,1,1,1,1,1,1,1,1,1,1,0], 
-        [0,1,0,1,0,1,0,1,0,1,0,1,0,1,0],
-        [0,1,1,1,7,1,1,1,1,1,1,1,1,1,0], 
-        [0,1,0,1,0,1,0,1,0,1,0,1,0,1,0],
-        [0,1,1,1,1,1,1,1,8,1,1,1,1,1,0], 
-        [0,1,0,1,0,1,0,1,0,1,0,1,0,1,0],
-        [0,1,1,1,1,1,1,1,1,1,1,1,1,1,3], 
-        [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
-    ];
-
-    let playerPos = { x: 0, y: 1 };
-    const robotLevels = {
-        1: { start: [0,0], goal: [4,4], walls: [[1,1],[1,2],[3,3]] },
-        2: { start: [0,4], goal: [4,0], walls: [[2,0],[2,1],[2,2]] },
-        3: { start: [2,0], goal: [2,4], walls: [[1,2],[2,2],[3,2]] },
-        4: { start: [0,0], goal: [4,0], walls: [[0,1],[1,1],[2,1]] },
-        5: { start: [0,2], goal: [4,2], walls: [[2,1],[2,2],[2,3]] }
-    };
-
-    // --- NEW: BADGE SYSTEM LOGIC (AP CSP PT REQUIREMENTS) ---
-
-    function awardBadge(s, m) {
-        const id = `S${s}-M${m}`;
-        if (badgesEarned.includes(id)) return;
-
-        document.getElementById('badgeAwardIconBig').textContent = badgeIcons[m];
-        document.getElementById('badgeAwardTitle').textContent = `${badgeNames[m].toUpperCase()} EARNED!`;
-        document.getElementById('badgeAwardName').textContent = `Sector ${s} Module Completed Successfully.`;
-        
-        badgeModal.style.display = 'block';
-
-        claimBtn.onclick = () => {
-            badgesEarned.push(id);
-            badgeModal.style.display = 'none';
-            animateBadgeToShelf(badgeIcons[m]);
-            updateBadgeUI();
-            updateBackendBadges(id, s, m);
-        };
-    }
-
-    async function updateBadgeUI() {
-        try {
-            const response = await fetch(`${robopURI}/api/robop/fetch_badges`, window.authOptions);
-            if (!response.ok) return;
-            const badges = await response.json();
-
-            badgeShelf.innerHTML = '';
-
-            const summary = {
-                "Autofill Whiz": { icon: "⚡", count: 0 },
-                "Platinum": { icon: "💎", count: 0 },
-                "Gold": { icon: "🥇", count: 0 },
-                "Silver": { icon: "🥈", count: 0 },
-                "Participation": { icon: "🎖️", count: 0 }
-            };
-
-            for (let i = 0; i < badges.length; i++) {
-                const b = badges[i];
-                if (b.autofill === true || b.autofill === "true") {
-                    summary["Autofill Whiz"].count++;
-                } else if (b.attempts === 1) {
-                    summary["Platinum"].count++;
-                } else if (b.attempts === 2) {
-                    summary["Gold"].count++;
-                } else if (b.attempts === 3) {
-                    summary["Silver"].count++;
-                } else {
-                    summary["Participation"].count++;
-                }
-            }
-
-            Object.keys(summary).forEach(key => {
-                const data = summary[key];
-                if (data.count > 0) {
-                    const el = document.createElement('div');
-                    el.className = 'badge-icon-small';
-                    el.textContent = data.icon;
-                    el.title = `${key}: ${data.count}`;
-
-                    const countTag = document.createElement('span');
-                    countTag.className = 'badge-count-tag';
-                    countTag.textContent = data.count;
-                    el.appendChild(countTag);
-
-                    badgeShelf.appendChild(el);
-                }
-            });
-
-            if (badges.length === 0) {
-                badgeShelf.innerHTML = '<span style="color: rgba(103,232,249,0.3); font-size: 9px;">EARNED_BADGES: [EMPTY]</span>';
-            }
-
-        } catch (error) {
-            console.error("Error updating badge UI:", error);
-        }
-    }
-
-    function animateBadgeToShelf(icon) {
-        const flyer = document.createElement('div');
-        flyer.className = 'flying-badge';
-        flyer.textContent = icon;
-        flyer.style.left = '50%';
-        flyer.style.top = '50%';
-        flyer.style.transform = 'translate(-50%, -50%)';
-        document.body.appendChild(flyer);
-
-        const targetRect = badgeShelf.getBoundingClientRect();
-
-        setTimeout(() => {
-            flyer.style.left = targetRect.left + (badgesEarned.length * 20) + 'px';
-            flyer.style.top = (targetRect.top + 10) + 'px';
-            flyer.style.transform = 'scale(0.4)';
-            flyer.style.opacity = '0';
-        }, 50);
-
-        setTimeout(() => flyer.remove(), 850);
-    }
-
-    async function updateBackendBadges(id, s, m) {
-        try {
-            await fetch(`${robopURI}/api/robop/assign_badge`, {
-                ...window.authOptions,
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ 
-                    badge_name: id,
-                    sector_id: s,
-                    module_id: m,
-                    attempts: moduleAttempts[m],
-                    used_autofill: usedAutofill
-                })
-            });
-        } catch (e) { console.warn("Backend not ready: Mocking badge save."); }
-    }
-
-    // --- END BADGE SYSTEM LOGIC ---
-
-    const teacherData = {
-        1: {
-            title: "Stop 1: Training",
-            msg: "Robot code is a pseudocode-style language with four commands—MOVE_FORWARD(), ROTATE_LEFT(), ROTATE_RIGHT(), and CAN_MOVE(direction)—used to control a robot through a maze. Pseudocode: Use plain-language, step-by-step logic (variables, conditionals, loops, and logical flow) to describe how your algorithm should work before worrying about strict programming syntax. Computational thinking: break the problem into small rules, test your logic, and iterate based on what you observe.",
-            hints: [
-                [
-                    "HINT 1: You need only one command for this task.",
-                    "HINT 2: Use the MOVE_FORWARD() command.",
-                    "HINT 3: Just write: MOVE_FORWARD()"
-                ],
-                [
-                    "HINT 1: Initialize sum ← 0 before the loop",
-                    "HINT 2: FOR EACH num IN nums, do sum ← sum + num",
-                    "HINT 3: After loop, RETURN sum / LENGTH(nums)"
-                ],
-                [
-                    "HINT 1: Binary is base-2 number system",
-                    "HINT 2: Each digit represents a power of 2",
-                    "HINT 3: 1101 = 1×8 + 1×4 + 0×2 + 1×1 = 13"
-                ]
-            ]
-        },
-        2: {
-            title: "Stop 2: Training",
-            msg: "Robot Code: Use simple, readable command blocks to control the robot and debug one movement decision at a time. Pseudocode: In the code runner, write College Board–level pseudocode solutions (conditionals, variables, algorithm development, and logical flow) and notice how different logical choices change the program's behavior as you progress through the maze. Computational thinking: practice structured problem-solving by tracing steps, checking edge cases, and improving your solution until it works.",
-            hints: [
-                [
-                    "HINT 1: This requires a rotation command, not a movement command.",
-                    "HINT 2: Use ROTATE_RIGHT() to turn the robot 90 degrees clockwise",
-                    "HINT 3: Just write: ROTATE_RIGHT()"
-                ],
-                [
-                    "HINT 1: Initialize count ← 0 before the loop",
-                    "HINT 2: FOR EACH value IN nums, check IF value > threshold",
-                    "HINT 3: When condition is true, do count ← count + 1",
-                    "HINT 4: RETURN count after the loop completes"
-                ],
-                [
-                    "HINT 1: AND logic requires both inputs to be true",
-                    "HINT 2: Truth table: true AND true = true, others = false",
-                    "HINT 3: Think of it like a strict requirement"
-                ]
-            ]
-        },
-        3: {
-            title: "Stop 3: Training",
-            msg: "Robot Code: Combine multiple commands (MOVE_FORWARD, ROTATE_LEFT, ROTATE_RIGHT) to navigate complex paths and use CAN_MOVE(direction) to check for obstacles before moving. Pseudocode: Apply variables and assignment operators to store values, then use conditional statements (IF-ELSE) to make decisions based on those values in your College Board–style solutions. Computational thinking: identify patterns in the maze, create reusable logic blocks, and test your algorithm with different scenarios to ensure it handles all possible paths.",
-            hints: [
-                [
-                    "HINT 1: You need to move forward twice.",
-                    "HINT 2: Use MOVE_FORWARD() two times in a row.",
-                    "HINT 3: Write: MOVE_FORWARD() MOVE_FORWARD()"
-                ],
-                [
-                    "HINT 1: Set max ← nums[1] (first element)",
-                    "HINT 2: Loop through remaining elements starting at index 2",
-                    "HINT 3: IF nums[i] > max, update max ← nums[i]",
-                    "HINT 4: RETURN max after checking all elements"
-                ],
-                [
-                    "HINT 1: Abstraction hides complex details",
-                    "HINT 2: It focuses on essential features only",
-                    "HINT 3: Like using a function without knowing implementation"
-                ]
-            ]
-        },
-        4: {
-            title: "Stop 4: Training",
-            msg: "Robot Code: Master complex navigation by chaining conditional checks with CAN_MOVE() and creating efficient movement sequences. Pseudocode: Implement loops (REPEAT and REPEAT UNTIL) to avoid repetitive code, and combine them with conditionals to create dynamic algorithms that adapt to changing conditions. Computational thinking: analyze the problem systematically, decompose it into smaller sub-problems, and optimize your solution by reducing redundant steps while maintaining correctness.",
-            hints: [
-                [
-                    "HINT 1: This requires two commands in sequence: move, then rotate",
-                    "HINT 2: First MOVE_FORWARD(), then ROTATE_LEFT()",
-                    "HINT 3: Write: MOVE_FORWARD() ROTATE_LEFT()"
-                ],
-                [
-                    "HINT 1: Use FOR i FROM 1 TO LENGTH(words) for index-based loop",
-                    "HINT 2: Check IF words[i] = target",
-                    "HINT 3: When match found, set words[i] ← replacement",
-                    "HINT 4: RETURN words at the end"
-                ],
-                [
-                    "HINT 1: IP stands for Internet Protocol",
-                    "HINT 2: It handles routing of data packets",
-                    "HINT 3: Like a postal system for internet data"
-                ]
-            ]
-        },
-        5: {
-            title: "Stop 5: Training",
-            msg: "Robot Code: Apply all four commands strategically to solve the most challenging maze configurations, planning your entire route before executing. Pseudocode: Create comprehensive algorithms using variables, conditionals, loops, and logical operators (AND, OR, NOT) that mirror real AP CSP exam questions. Computational thinking: demonstrate mastery by developing efficient, elegant solutions that show deep understanding of algorithm design, abstraction, and the relationship between pseudocode logic and actual program execution.",
-            hints: [
-                [
-                    "HINT 1: You need to move forward three times.",
-                    "HINT 2: Use MOVE_FORWARD() three times in a row.",
-                    "HINT 3: Write: MOVE_FORWARD() MOVE_FORWARD() MOVE_FORWARD()"
-                ],
-                [
-                    "HINT 1: Create evens ← empty list before loop",
-                    "HINT 2: FOR EACH num IN nums, check IF num MOD 2 = 0",
-                    "HINT 3: When num is even, use APPEND(evens, num)",
-                    "HINT 4: RETURN evens after processing all numbers"
-                ],
-                [
-                    "HINT 1: Heuristics are rule-of-thumb approaches",
-                    "HINT 2: They provide good-enough solutions quickly",
-                    "HINT 3: Like estimating instead of calculating exactly"
-                ]
-            ]
-        }
-    };
-
-    // ========== AI CHAT FUNCTIONS ==========
-
-    async function sendMessageToAI(userMessage) {
-        try {
-            const response = await fetch(`${API_URL}/ai_chat`, {
-                ...window.authOptions,
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    sector_id: currentSectorNum,
-                    question_num: currentQuestion,
-                    user_message: userMessage,
-                    conversation_history: conversationHistory
-                })
-            });
-
-            const data = await response.json();
-            
-            if (!response.ok || !data.success) {
-                throw new Error(data.message || 'Failed to get AI response');
-            }
-
-            return data.ai_response;
-        } catch (error) {
-            console.error('AI Chat Error:', error);
-            return "Sorry, I'm having trouble connecting right now. Please try again! 🤖";
-        }
-    }
-
-    function addChatMessage(content, isAI = true) {
-        const messageDiv = document.createElement('div');
-        messageDiv.className = `chat-message ${isAI ? 'message-ai' : 'message-user'}`;
-        
-        messageDiv.innerHTML = `
-            <div class="message-sender">${isAI ? 'AI Assistant 🤖' : 'You'}</div>
-            <div class="message-content">${content}</div>
-        `;
-        
-        chatMessages.appendChild(messageDiv);
-        chatMessages.scrollTop = chatMessages.scrollHeight;
-        
-        conversationHistory.push({
-            role: isAI ? 'assistant' : 'user',
-            content: content
-        });
-        
-        if (conversationHistory.length > 20) {
-            conversationHistory = conversationHistory.slice(-20);
-        }
-    }
-
-    async function handleSendMessage() {
-        const message = chatInput.value.trim();
-               if (!message) return;
-        
-        addChatMessage(message, false);
-        chatInput.value = '';
-        
-        typingIndicator.classList.add('active');
-        sendChatBtn.disabled = true;
-        
-        try {
-            const aiResponse = await sendMessageToAI(message);
-            typingIndicator.classList.remove('active');
-            addChatMessage(aiResponse, true);
-        } catch (error) {
-            typingIndicator.classList.remove('active');
-            addChatMessage("I encountered an error. Please try again! 🤖", true);
-        } finally {
-            sendChatBtn.disabled = false;
-            chatInput.focus();
-        }
-    }
-
-    function resetChatForNewQuestion() {
-        conversationHistory = [];
-        chatMessages.innerHTML = `
-            <div class="chat-message message-ai">
-                <div class="message-sender">AI Assistant 🤖</div>
-                <div class="message-content">Hi! I'm here to help you with Sector ${currentSectorNum}, Question ${currentQuestion + 1}. Ask me anything! 🌟</div>
-            </div>
-        `;
-    }
-
-    // ========== HINT FUNCTIONS ==========
-
-    function showAIAssistant() {
-        if (!modal.classList.contains('active')) return;
-        
-        const sectorData = teacherData[currentSectorNum];
-        if (!sectorData) return;
-        
-        currentHintLevel = 0;
-        
-        hintTitle.textContent = `Sector ${currentSectorNum} AI Assistant`;
-        hintSubtitle.textContent = `Question ${currentQuestion + 1} of 3`;
-        hintOverview.textContent = sectorData.msg;
-        
-        updateHintDisplay();
-        hintOverlay.classList.add('active');
-    }
-
-    function closeAIAssistant() {
-        hintOverlay.classList.remove('active');
-    }
-
-    function updateHintDisplay() {
-        const sectorData = teacherData[currentSectorNum];
-        if (!sectorData || !sectorData.hints[currentQuestion]) return;
-        
-        const hints = sectorData.hints[currentQuestion];
-        hintSteps.innerHTML = '';
-        
-        hints.forEach((hint, index) => {
-            const li = document.createElement('li');
-            li.className = `hint-item ${index <= currentHintLevel ? 'unlocked' : ''}`;
-            li.textContent = hint;
-            hintSteps.appendChild(li);
-        });
-        
-        prevHintBtn.disabled = currentHintLevel === 0;
-        prevHintBtn.style.opacity = prevHintBtn.disabled ? '0.5' : '1';
-        nextHintBtn.disabled = currentHintLevel >= hints.length - 1;
-        nextHintBtn.style.opacity = nextHintBtn.disabled ? '0.5' : '1';
-    }
-
-    function nextHint() {
-        const sectorData = teacherData[currentSectorNum];
-        if (!sectorData || !sectorData.hints[currentQuestion]) return;
-        
-        const hints = sectorData.hints[currentQuestion];
-        if (currentHintLevel < hints.length - 1) {
-            currentHintLevel++;
-            updateHintDisplay();
-        }
-    }
-
-    function prevHint() {
-        if (currentHintLevel > 0) {
-            currentHintLevel--;
-            updateHintDisplay();
-        }
-    }
-
-    function updateBotIconVisibility() {
-        if (modal.classList.contains('active') && currentQuestion < 3) {
-            helpBotIcon.classList.add('pulsing');
-        } else {
-            helpBotIcon.classList.remove('pulsing');
-        }
-    }
-
-    // ========== EVENT LISTENERS ==========
-
-    sendChatBtn.addEventListener('click', handleSendMessage);
-    
-    chatInput.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter' && !e.shiftKey) {
-            e.preventDefault();
-            handleSendMessage();
-        }
+    hints.forEach((hint, index) => {
+      const li = document.createElement('li');
+      li.className = `hint-item ${index <= currentHintLevel ? 'unlocked' : ''}`;
+      li.textContent = hint;
+      hintSteps.appendChild(li);
     });
 
-    chatInput.addEventListener('input', function() {
-        this.style.height = 'auto';
-        this.style.height = Math.min(this.scrollHeight, 60) + 'px';
+    prevHintBtn.disabled = currentHintLevel === 0;
+    prevHintBtn.style.opacity = prevHintBtn.disabled ? '0.5' : '1';
+    nextHintBtn.disabled = currentHintLevel >= hints.length - 1;
+    nextHintBtn.style.opacity = nextHintBtn.disabled ? '0.5' : '1';
+  }
+  function nextHint() {
+    const sectorData = teacherData[currentSectorNum];
+    if (!sectorData || !sectorData.hints[currentQuestion]) return;
+    const hints = sectorData.hints[currentQuestion];
+    if (currentHintLevel < hints.length - 1) { currentHintLevel++; updateHintDisplay(); }
+  }
+  function prevHint() {
+    if (currentHintLevel > 0) { currentHintLevel--; updateHintDisplay(); }
+  }
+
+  function updateBotIconVisibility() {
+    if (modal.classList.contains('active') && currentQuestion < 3) helpBotIcon.classList.add('pulsing');
+    else helpBotIcon.classList.remove('pulsing');
+  }
+
+  // event listeners
+  sendChatBtn.addEventListener('click', handleSendMessage);
+  chatInput.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendMessage(); }
+  });
+  chatInput.addEventListener('input', function() {
+    this.style.height = 'auto';
+    this.style.height = Math.min(this.scrollHeight, 60) + 'px';
+  });
+
+  helpBotIcon.addEventListener('click', showAIAssistant);
+  closeAiBtn.addEventListener('click', closeAIAssistant);
+  prevHintBtn.addEventListener('click', prevHint);
+  nextHintBtn.addEventListener('click', nextHint);
+
+  // progress UI
+  function updateProgressBar() {
+    const totalSectors = 5;
+    const completedCount = completedSectors.size;
+    const percentage = Math.round((completedCount / totalSectors) * 100);
+
+    document.getElementById('progressPercentage').textContent = `${percentage}%`;
+    document.getElementById('statSectors').textContent = `${completedCount}/5`;
+    document.getElementById('statLocked').textContent = `${5 - completedCount}`;
+
+    const boxes = document.querySelectorAll('.progress-box');
+    const boxesPerSector = 3;
+
+    boxes.forEach((box, index) => {
+      const sectorIndex = Math.floor(index / boxesPerSector);
+      if (sectorIndex < completedCount) box.classList.add('completed');
+      else box.classList.remove('completed');
     });
+  }
 
-    helpBotIcon.addEventListener('click', showAIAssistant);
-    closeAiBtn.addEventListener('click', closeAIAssistant);
-    prevHintBtn.addEventListener('click', prevHint);
-    nextHintBtn.addEventListener('click', nextHint);
+  // maze
+  const mazeLayout = [
+    [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+    [2,1,1,1,4,1,1,1,5,1,1,1,6,1,1],
+    [0,1,0,1,0,1,0,1,0,1,0,1,0,1,0],
+    [0,1,1,1,1,1,1,1,1,1,1,1,1,1,0],
+    [0,1,0,1,0,1,0,1,0,1,0,1,0,1,0],
+    [0,1,1,1,7,1,1,1,1,1,1,1,1,1,0],
+    [0,1,0,1,0,1,0,1,0,1,0,1,0,1,0],
+    [0,1,1,1,1,1,1,1,8,1,1,1,1,1,0],
+    [0,1,0,1,0,1,0,1,0,1,0,1,0,1,0],
+    [0,1,1,1,1,1,1,1,1,1,1,1,1,1,3],
+    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
+  ];
 
-    // Progress Bar Update Function
-    function updateProgressBar() {
-        const totalSectors = 5;
-        const completedCount = completedSectors.size;
-        const percentage = Math.round((completedCount / totalSectors) * 100);
-        
-        document.getElementById('progressPercentage').textContent = `${percentage}%`;
-        document.getElementById('statSectors').textContent = `${completedCount}/5`;
-        document.getElementById('statLocked').textContent = `${5 - completedCount}`;
-        
-        const boxes = document.querySelectorAll('.progress-box');
-        const boxesPerSector = 3;
-        
-        boxes.forEach((box, index) => {
-            const sectorIndex = Math.floor(index / boxesPerSector);
-            if (sectorIndex < completedCount) {
-                box.classList.add('completed');
-            } else {
-                box.classList.remove('completed');
-            }
-        });
+  let playerPos = { x: 0, y: 1 };
+
+  const robotLevels = {
+    1: { start: [0,0], goal: [4,4], walls: [[1,1],[1,2],[3,3]] },
+    2: { start: [0,4], goal: [4,0], walls: [[2,0],[2,1],[2,2]] },
+    3: { start: [2,0], goal: [2,4], walls: [[1,2],[2,2],[3,2]] },
+    4: { start: [0,0], goal: [4,0], walls: [[0,1],[1,1],[2,1]] },
+    5: { start: [0,2], goal: [4,2], walls: [[2,1],[2,2],[2,3]] }
+  };
+
+  function drawMaze() {
+    mazeEl.innerHTML = '';
+    mazeLayout.forEach((row, y) => {
+      row.forEach((val, x) => {
+        const cell = document.createElement('div');
+        cell.className = 'cell ' + (val === 0 ? 'wall' : 'path');
+
+        if (val === 2) { cell.textContent = 'S'; cell.classList.add('start'); }
+        if (val === 3) { cell.textContent = 'E'; cell.classList.add('end'); }
+
+        if (val >= 4 && val <= 8) {
+          const sNum = val - 3;
+          cell.textContent = sNum;
+          cell.classList.add('sector');
+          if (completedSectors.has(sNum)) cell.classList.add('completed');
+        }
+
+        if (x === playerPos.x && y === playerPos.y) {
+          const p = document.createElement('div');
+          p.className = 'player';
+          cell.appendChild(p);
+        }
+
+        mazeEl.appendChild(cell);
+      });
+    });
+  }
+
+  async function showQuestion() {
+    document.getElementById('sectorBadge').textContent = currentSectorNum;
+    document.getElementById('mTitle').textContent = `Sector ${currentSectorNum}`;
+    feedback.textContent = '';
+    nextBtn.disabled = true;
+    nextBtn.style.opacity = "0.5";
+
+    resetChatForNewQuestion();
+
+    if (currentQuestion === 0) renderRobotSim();
+    else if (currentQuestion === 1) await renderPseudoCode();
+    else renderMCQ();
+
+    nextBtn.style.display = currentQuestion < 2 ? 'block' : 'none';
+    autofillBtn.style.display = currentQuestion < 2 ? 'block' : 'none';
+    backBtn.style.display = currentQuestion === 2 ? 'block' : 'none';
+    updateBotIconVisibility();
+  }
+
+  function renderRobotSim() {
+    const level = robotLevels[currentSectorNum];
+    mContent.innerHTML = `
+      <div class="robot-sim-container">
+        <p style="color: #e2e8f0; margin-bottom: 10px; font-size: 14px;">Program the robot. Reach ⭐. Avoid 🟥.</p>
+        <div class="robot-grid" id="rg"></div>
+        <textarea id="rcInput">robot.MoveForward();</textarea>
+        <button class="btn btn-check" id="runSimBtn">Execute Command</button>
+      </div>
+    `;
+    document.getElementById('runSimBtn').onclick = runRobotSim;
+    updateRobotGrid(level.start, 0);
+  }
+
+  async function runRobotSim() {
+    moduleAttempts[0]++;
+    const code = document.getElementById('rcInput').value;
+    const level = robotLevels[currentSectorNum];
+    let rPos = [...level.start];
+    let dir = 0;
+    const commands = [];
+    const robot = {
+      MoveForward: (n=1) => { for (let i=0; i<n; i++) commands.push('MOVE'); },
+      TurnRight: () => commands.push('RIGHT'),
+      TurnLeft: () => commands.push('LEFT')
+    };
+
+    try {
+      eval(code);
+      for (const cmd of commands) {
+        await new Promise(r => setTimeout(r, 350));
+        if (cmd === 'MOVE') {
+          if (dir === 0) rPos[0]++;
+          else if (dir === 1) rPos[1]++;
+          else if (dir === 2) rPos[0]--;
+          else rPos[1]--;
+        } else if (cmd === 'RIGHT') dir = (dir + 1) % 4;
+        else if (cmd === 'LEFT') dir = (dir + 3) % 4;
+
+        updateRobotGrid(rPos, dir);
+
+        if (
+          rPos[0] < 0 || rPos[0] > 4 || rPos[1] < 0 || rPos[1] > 4 ||
+          level.walls.some(w => w[0] === rPos[0] && w[1] === rPos[1])
+        ) {
+          feedback.textContent = "💥 Crash! Resetting...";
+          feedback.style.color = "#ef4444";
+          setTimeout(() => updateRobotGrid(level.start, 0), 900);
+          return;
+        }
+      }
+
+      if (rPos[0] === level.goal[0] && rPos[1] === level.goal[1]) {
+        feedback.style.color = "#10b981";
+        feedback.textContent = "✅ Goal reached!";
+        nextBtn.disabled = false;
+        nextBtn.style.opacity = "1";
+        awardBadge(currentSectorNum, 0);
+      } else {
+        feedback.style.color = "#fbbf24";
+        feedback.textContent = "⚠️ Short of target. Try again.";
+      }
+    } catch (e) {
+      feedback.style.color = "#ef4444";
+      feedback.textContent = "❌ Syntax Error.";
+    }
+  }
+
+  function updateRobotGrid(pos, dir) {
+    const grid = document.getElementById('rg');
+    if (!grid) return;
+    grid.innerHTML = '';
+
+    const level = robotLevels[currentSectorNum];
+    const icons = ["▶️", "🔽", "◀️", "🔼"];
+
+    for (let y=0; y<5; y++) {
+      for (let x=0; x<5; x++) {
+        const c = document.createElement('div');
+        c.className = 'r-cell';
+
+        if (level.walls.some(w => w[0] === x && w[1] === y)) c.classList.add('r-wall');
+        if (x === level.goal[0] && y === level.goal[1]) c.textContent = '⭐';
+        if (x === pos[0] && y === pos[1]) c.textContent = icons[dir];
+
+        grid.appendChild(c);
+      }
+    }
+  }
+
+  async function fetchRandomPseudocodeQuestion(levelNum) {
+    const url = `${window.PSEUDOCODE_BANK_URL}/random?level=${encodeURIComponent(levelNum)}`;
+    const res = await fetch(url, { ...window.authOptions, method: "GET" });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || !data.success) throw new Error(data.message || `Failed to fetch pseudocode question for level ${levelNum}`);
+    return data;
+  }
+
+  async function renderPseudoCode() {
+    const levelNum = currentSectorNum;
+
+    mContent.innerHTML = `
+      <p style="color:#e2e8f0; margin-bottom:10px;">Fetching a random pseudocode question (Level ${levelNum})...</p>
+      <div style="margin-top:10px; background:#020617; padding:10px; border-radius:8px; font-family:monospace; font-size:12px; color:#06b6d4;">
+        Loading...
+      </div>
+    `;
+
+    try {
+      const data = await fetchRandomPseudocodeQuestion(levelNum);
+
+      currentPseudo.level = data.level;
+      currentPseudo.question_id = data.question_id;
+      currentPseudo.question = data.question;
+
+      mContent.innerHTML = `
+        <div style="color:#e2e8f0; margin-bottom:10px; font-size:14px;">
+          <div style="color: rgba(103,232,249,0.7); font-family: monospace; font-size: 12px; margin-bottom: 6px;">
+            Level: ${data.level} • Question ID: ${data.question_id}
+          </div>
+          <div style="font-weight:800; color:#fbbf24; margin-bottom:8px;">Prompt</div>
+          <div style="background: rgba(2,6,23,0.6); border: 1px solid rgba(6,182,212,0.25); padding: 12px; border-radius: 10px; line-height: 1.35;">
+            ${data.question}
+          </div>
+        </div>
+
+        <textarea id="pcCode" placeholder="Write your pseudocode here..."></textarea>
+
+        <button class="btn btn-check" id="validateBtn">Generate + Check Answer</button>
+
+        <div id="pcExport" style="margin-top:10px; background:#020617; padding:10px; border-radius:8px; font-family:monospace; font-size:12px; color:#06b6d4; white-space:pre-wrap;">
+          Exported code will appear here after you check.
+        </div>
+
+        <div id="pcOutput" style="margin-top:10px; background:#020617; padding:10px; border-radius:8px; font-family:monospace; font-size:12px; color:#06b6d4; white-space:pre-wrap;">
+          Checker output will appear here.
+        </div>
+      `;
+
+      document.getElementById("validateBtn").onclick = generateAndCheckPseudo;
+
+    } catch (err) {
+      console.error("Pseudocode bank fetch failed:", err);
+      feedback.style.color = "#ef4444";
+      feedback.textContent = `❌ ${err.message}`;
+      mContent.innerHTML = `
+        <p style="color:#e2e8f0; margin-bottom:10px;">Could not load a question for Level ${levelNum}.</p>
+        <div style="margin-top:10px; background:#020617; padding:10px; border-radius:8px; font-family:monospace; font-size:12px; color:#06b6d4;">
+          Check that your backend is running and that /api/pseudocode_bank/random works.
+        </div>
+      `;
+    }
+  }
+
+  function pseudoToExport(codeRaw) {
+    let code = (codeRaw || "").trim();
+    code = code.replaceAll("←", "=");
+    code = code.replaceAll("≠", "!=");
+
+    const lines = code.split("\n").map(l => l.trim()).filter(Boolean);
+
+    const out = [];
+    out.push("// Exported from pseudocode (display-only)");
+    out.push("// Not executed. Used for checking structure.\n");
+    out.push("function solution() {");
+    for (let line of lines) out.push(`  // ${line}`);
+    out.push("}\n");
+    out.push("solution();");
+    return out.join("\n");
+  }
+
+  async function generateAndCheckPseudo() {
+    moduleAttempts[1]++;
+
+    const code = document.getElementById("pcCode")?.value || "";
+    const exportBox = document.getElementById("pcExport");
+    const output = document.getElementById("pcOutput");
+
+    if (code.trim().length < 10) {
+      feedback.style.color = "#fbbf24";
+      feedback.textContent = "⚠️ Write a bit more pseudocode before checking.";
+      if (exportBox) exportBox.textContent = "Exported code will appear here after you check.";
+      if (output) output.textContent = "Not enough content yet.";
+      return;
     }
 
-    function drawMaze() {
-        mazeEl.innerHTML = '';
-        mazeLayout.forEach((row, y) => {
-            row.forEach((val, x) => {
-                const cell = document.createElement('div');
-                cell.className = 'cell ' + (val === 0 ? 'wall' : 'path');
-                if (val === 2) { cell.textContent = 'S'; cell.classList.add('start'); }
-                if (val === 3) { cell.textContent = 'E'; cell.classList.add('end'); }
-                if (val >= 4 && val <= 8) {
-                    const sNum = val - 3;
-                    cell.textContent = sNum;
-                    cell.classList.add('sector');
-                    if (completedSectors.has(sNum)) cell.classList.add('completed');
-                }
-                if (x === playerPos.x && y === playerPos.y) {
-                    const p = document.createElement('div'); p.className = 'player';
-                    cell.appendChild(p);
-                }
-                mazeEl.appendChild(cell);
-            });
-        });
-    }
+    const exported = pseudoToExport(code);
+    if (exportBox) exportBox.textContent = exported;
 
-    async function showQuestion() {
-        document.getElementById('sectorBadge').textContent = currentSectorNum;
-        document.getElementById('mTitle').textContent = `Sector ${currentSectorNum}`;
-        feedback.textContent = '';
+    feedback.style.color = "#06b6d4";
+    feedback.textContent = "⏳ Checking your answer...";
+
+    try {
+      const res = await fetch(`${window.PSEUDOCODE_BANK_URL}/grade`, {
+        ...window.authOptions,
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          question_id: currentPseudo.question_id,
+          level: currentPseudo.level,
+          pseudocode: code,
+          use_ai: true
+        })
+      });
+
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok || !data.success) {
+        const msg = data.message || "Checker failed.";
+        feedback.style.color = "#ef4444";
+        feedback.textContent = `❌ ${msg}`;
+        if (output) output.textContent = `Server error: ${msg}`;
+        return;
+      }
+
+      if (data.passed) {
+        feedback.style.color = "#10b981";
+        feedback.textContent = "✅ Correct (AI graded).";
+
+        if (output) {
+          const improved = (data.improved_pseudocode || "").trim();
+          const fb = (data.feedback || "").trim();
+          output.textContent =
+            `PASS ✅\n` +
+            `Question: ${data.question_id} (${data.level})\n\n` +
+            (fb ? `Feedback:\n${fb}\n\n` : "") +
+            (improved ? `Example Passing Solution:\n${improved}\n` : "");
+        }
+
+        nextBtn.disabled = false;
+        nextBtn.style.opacity = "1";
+        awardBadge(currentSectorNum, 1);
+      } else {
+        feedback.style.color = "#fbbf24";
+        feedback.textContent = "⚠️ Not quite (AI graded). Fix the missing parts and try again.";
+
+        if (output) {
+          const missingList = (data.missing || []).map(m => `- ${m}`).join("\n");
+          const improved = (data.improved_pseudocode || "").trim();
+          const fb = (data.feedback || "").trim();
+
+          output.textContent =
+            `FAIL ❌\n` +
+            `Missing:\n${missingList}\n\n` +
+            (fb ? `How to fix:\n${fb}\n\n` : "") +
+            (improved ? `Example Passing Solution:\n${improved}\n` : "");
+        }
+
         nextBtn.disabled = true;
         nextBtn.style.opacity = "0.5";
+      }
 
-        resetChatForNewQuestion();
-
-        if (currentQuestion === 0) renderRobotSim();
-        else if (currentQuestion === 1) await renderPseudoCode();
-        else renderMCQ();
-
-        nextBtn.style.display = currentQuestion < 2 ? 'block' : 'none';
-        autofillBtn.style.display = currentQuestion < 2 ? 'block' : 'none';
-        backBtn.style.display = currentQuestion === 2 ? 'block' : 'none';
-        updateBotIconVisibility();
+    } catch (err) {
+      console.error(err);
+      feedback.style.color = "#ef4444";
+      feedback.textContent = "❌ Error connecting to checker.";
+      if (output) output.textContent = "Network error calling /api/pseudocode_bank/grade";
     }
+  }
 
-    function renderRobotSim() {
-        const level = robotLevels[currentSectorNum];
-        mContent.innerHTML = `
-            <div class="robot-sim-container">
-                <p style="color: #e2e8f0; margin-bottom: 10px; font-size: 14px;">Program the robot. Reach ⭐. Avoid 🟥.</p>
-                <div class="robot-grid" id="rg"></div>
-                <textarea id="rcInput">robot.MoveForward();</textarea>
-                <button class="btn btn-check" id="runSimBtn">Execute Command</button>
-            </div>
-        `;
-        document.getElementById('runSimBtn').onclick = runRobotSim;
-        updateRobotGrid(level.start, 0);
-    }
+  function renderMCQ() {
+    const qs = [
+      {q:"What is 1101 in binary?", a:["13","11"], c:0},
+      {q:"What is AND logic?", a:["Both true","One true"], c:0},
+      {q:"What is Abstraction?", a:["Hide detail","Show all"], c:0},
+      {q:"What is IP Protocol?", a:["Routing","Website"], c:0},
+      {q:"What are Heuristics?", a:["Rule of thumb","Perfect solution"], c:0}
+    ][currentSectorNum-1];
 
-    async function runRobotSim() {
-        moduleAttempts[0]++;
-        const code = document.getElementById('rcInput').value;
-        const level = robotLevels[currentSectorNum];
-        let rPos = [...level.start];
-        let dir = 0; 
-        const commands = [];
-        const robot = { 
-            MoveForward: (n=1) => { for(let i=0; i<n; i++) commands.push('MOVE'); }, 
-            TurnRight: () => commands.push('RIGHT'), 
-            TurnLeft: () => commands.push('LEFT') 
-        };
-        try {
-            eval(code);
-            for (const cmd of commands) {
-                await new Promise(r => setTimeout(r, 400));
-                if (cmd === 'MOVE') { 
-                    if (dir === 0) rPos[0]++; 
-                    else if (dir === 1) rPos[1]++; 
-                    else if (dir === 2) rPos[0]--; 
-                    else rPos[1]--; 
-                }
-                else if (cmd === 'RIGHT') dir = (dir + 1) % 4;
-                else if (cmd === 'LEFT') dir = (dir + 3) % 4;
-                updateRobotGrid(rPos, dir);
-                if (rPos[0]<0||rPos[0]>4||rPos[1]<0||rPos[1]>4||level.walls.some(w=>w[0]===rPos[0]&&w[1]===rPos[1])) {
-                    feedback.textContent = "💥 Crash! Resetting...";
-                    feedback.style.color = "#ef4444";
-                    setTimeout(()=>updateRobotGrid(level.start, 0), 1000); return;
-                }
-            }
-            if (rPos[0] === level.goal[0] && rPos[1] === level.goal[1]) {
-                feedback.style.color = "#10b981"; 
-                feedback.textContent = "✅ Goal reached!";
-                nextBtn.disabled = false; 
-                nextBtn.style.opacity = "1";
-                awardBadge(currentSectorNum, 0);
-            } else { 
-                feedback.style.color = "#fbbf24";
-                feedback.textContent = "⚠️ Short of target. Try again."; 
-            }
-        } catch(e) { 
-            feedback.style.color = "#ef4444";
-            feedback.textContent = "❌ Syntax Error."; 
-        }
-    }
-
-    function updateRobotGrid(pos, dir) {
-        const grid = document.getElementById('rg');
-        if (!grid) return; 
-        grid.innerHTML = '';
-        const level = robotLevels[currentSectorNum];
-        const icons = ["▶️", "🔽", "◀️", "🔼"];
-        for (let y=0; y<5; y++) {
-            for (let x=0; x<5; x++) {
-                const c = document.createElement('div'); 
-                c.className = 'r-cell';
-                if (level.walls.some(w => w[0] === x && w[1] === y)) c.classList.add('r-wall');
-                if (x === level.goal[0] && y === level.goal[1]) c.textContent = '⭐';
-                if (x === pos[0] && y === pos[1]) c.textContent = icons[dir];
-                grid.appendChild(c);
-            }
-        }
-    }
-
-    async function fetchRandomPseudocodeQuestion(levelNum) {
-        const url = `${window.PSEUDOCODE_BANK_URL}/random?level=${encodeURIComponent(levelNum)}`;
-
-        const res = await fetch(url, {
-            ...window.authOptions,
-            method: "GET"
-        });
-
-        const data = await res.json().catch(() => ({}));
-
-        if (!res.ok || !data.success) {
-            const msg = data.message || `Failed to fetch pseudocode question for level ${levelNum}`;
-            throw new Error(msg);
-        }
-
-        return data;
-    }
-
-    async function renderPseudoCode() {
-        const levelNum = currentSectorNum;
-
-        mContent.innerHTML = `
-            <p style="color:#e2e8f0; margin-bottom:10px;">Fetching a random pseudocode question (Level ${levelNum})...</p>
-            <div style="margin-top:10px; background:#020617; padding:10px; border-radius:8px; font-family:monospace; font-size:12px; color:#06b6d4;">
-                Loading...
-            </div>
-        `;
-
-        try {
-            const data = await fetchRandomPseudocodeQuestion(levelNum);
-
-            currentPseudo.level = data.level;
-            currentPseudo.question_id = data.question_id;
-            currentPseudo.question = data.question;
-
-            mContent.innerHTML = `
-                <div style="color:#e2e8f0; margin-bottom:10px; font-size:14px;">
-                    <div style="color: rgba(103,232,249,0.7); font-family: monospace; font-size: 12px; margin-bottom: 6px;">
-                        Level: ${data.level} • Question ID: ${data.question_id}
-                    </div>
-                    <div style="font-weight:800; color:#fbbf24; margin-bottom:8px;">Prompt</div>
-                    <div style="background: rgba(2,6,23,0.6); border: 1px solid rgba(6,182,212,0.25); padding: 12px; border-radius: 10px; line-height: 1.35;">
-                        ${data.question}
-                    </div>
-                </div>
-
-                <textarea id="pcCode" placeholder="Write your pseudocode here..."></textarea>
-
-                <button class="btn btn-check" id="validateBtn">Generate + Check Answer</button>
-
-                <div id="pcExport" style="margin-top:10px; background:#020617; padding:10px; border-radius:8px; font-family:monospace; font-size:12px; color:#06b6d4; white-space:pre-wrap;">
-                Exported code will appear here after you check.
-                </div>
-
-                <div id="pcOutput" style="margin-top:10px; background:#020617; padding:10px; border-radius:8px; font-family:monospace; font-size:12px; color:#06b6d4; white-space:pre-wrap;">
-                Checker output will appear here.
-                </div>
-            `;
-
-            document.getElementById("validateBtn").onclick = generateAndCheckPseudo;
-
-        } catch (err) {
-            console.error("Pseudocode bank fetch failed:", err);
-            feedback.style.color = "#ef4444";
-            feedback.textContent = `❌ ${err.message}`;
-
-            mContent.innerHTML = `
-                <p style="color:#e2e8f0; margin-bottom:10px;">Could not load a question for Level ${levelNum}.</p>
-                <div style="margin-top:10px; background:#020617; padding:10px; border-radius:8px; font-family:monospace; font-size:12px; color:#06b6d4;">
-                    Check that your backend is running and that /api/pseudocode_bank/random works.
-                </div>
-            `;
-        }
-    }
-
-    function pseudoToExport(codeRaw) {
-        let code = (codeRaw || "").trim();
-        code = code.replaceAll("←", "=");
-        code = code.replaceAll("≠", "!=");
-
-        const lines = code.split("\n").map(l => l.trim()).filter(Boolean);
-
-        const out = [];
-        out.push("// Exported from pseudocode (display-only)");
-        out.push("// Not executed. Used for checking structure.\n");
-        out.push("function solution() {");
-
-        for (let line of lines) {
-            const lower = line.toLowerCase();
-            if (lower.startsWith("input")) out.push(`  // ${line}`);
-            else if (lower.startsWith("display") || lower.startsWith("print") || lower.startsWith("output")) out.push(`  // ${line}`);
-            else if (lower.startsWith("if")) out.push(`  // ${line}`);
-            else if (lower.startsWith("else")) out.push(`  // ${line}`);
-            else if (lower.startsWith("for") || lower.startsWith("while") || lower.startsWith("repeat") || lower.startsWith("loop")) out.push(`  // ${line}`);
-            else if (lower.startsWith("return")) out.push(`  // ${line}`);
-            else out.push(`  // ${line}`);
-        }
-
-        out.push("}\n");
-        out.push("solution();");
-        return out.join("\n");
-    }
-
-    async function generateAndCheckPseudo() {
-        moduleAttempts[1]++;
-
-        const code = document.getElementById("pcCode")?.value || "";
-        const exportBox = document.getElementById("pcExport");
-        const output = document.getElementById("pcOutput");
-
-        if (code.trim().length < 10) {
-            feedback.style.color = "#fbbf24";
-            feedback.textContent = "⚠️ Write a bit more pseudocode before checking.";
-            if (exportBox) exportBox.textContent = "Exported code will appear here after you check.";
-            if (output) output.textContent = "Not enough content yet.";
-            return;
-        }
-
-        const exported = pseudoToExport(code);
-        if (exportBox) exportBox.textContent = exported;
-
-        feedback.style.color = "#06b6d4";
-        feedback.textContent = "⏳ Checking your answer...";
-
-        try {
-            const res = await fetch(`${window.PSEUDOCODE_BANK_URL}/grade`, {
-                ...window.authOptions,
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    question_id: currentPseudo.question_id,
-                    level: currentPseudo.level,
-                    pseudocode: code,
-                    use_ai: true
-                })
-            });
-
-            const data = await res.json().catch(() => ({}));
-
-            if (!res.ok || !data.success) {
-                const msg = data.message || "Checker failed.";
-                feedback.style.color = "#ef4444";
-                feedback.textContent = `❌ ${msg}`;
-                if (output) output.textContent = `Server error: ${msg}`;
-                return;
-            }
-
-            if (data.passed) {
-                feedback.style.color = "#10b981";
-                feedback.textContent = "✅ Correct (AI graded).";
-
-                if (output) {
-                    const improved = (data.improved_pseudocode || "").trim();
-                    const fb = (data.feedback || "").trim();
-                    output.textContent =
-                        `PASS ✅\n` +
-                        `Question: ${data.question_id} (${data.level})\n\n` +
-                        (fb ? `Feedback:\n${fb}\n\n` : "") +
-                        (improved ? `Example Passing Solution:\n${improved}\n` : "");
-                }
-
-                nextBtn.disabled = false;
-                nextBtn.style.opacity = "1";
-                awardBadge(currentSectorNum, 1);
-            } else {
-                feedback.style.color = "#fbbf24";
-                feedback.textContent = "⚠️ Not quite (AI graded). Fix the missing parts and try again.";
-
-                if (output) {
-                    const missingList = (data.missing || []).map(m => `- ${m}`).join("\n");
-                    const improved = (data.improved_pseudocode || "").trim();
-                    const fb = (data.feedback || "").trim();
-
-                    output.textContent =
-                        `FAIL ❌\n` +
-                        `Missing:\n${missingList}\n\n` +
-                        (fb ? `How to fix:\n${fb}\n\n` : "") +
-                        (improved ? `Example Passing Solution:\n${improved}\n` : "");
-                }
-
-                nextBtn.disabled = true;
-                nextBtn.style.opacity = "0.5";
-            }
-
-        } catch (err) {
-            console.error(err);
-            feedback.style.color = "#ef4444";
-            feedback.textContent = "❌ Error connecting to checker.";
-            if (output) output.textContent = "Network error calling /api/pseudocode_bank/grade";
-        }
-    }
-
-    function renderMCQ() {
-        const qs = [
-            {q:"What is 1101 in binary?", a:["13","11"], c:0},
-            {q:"What is AND logic?", a:["Both true","One true"], c:0},
-            {q:"What is Abstraction?", a:["Hide detail","Show all"], c:0},
-            {q:"What is IP Protocol?", a:["Routing","Website"], c:0},
-            {q:"What are Heuristics?", a:["Rule of thumb","Perfect solution"], c:0}
-        ][currentSectorNum-1];
-        mContent.innerHTML = `<p style="color:white; margin-bottom:15px; font-size:16px;">${qs.q}</p>`;
-        qs.a.forEach((opt, i) => {
-            const b = document.createElement('button'); 
-            b.className = 'btn'; 
-            b.style = "background:#334155; color:white; margin-bottom:5px; width:100%; text-align:left;";
-            b.textContent = opt;
-            b.onclick = () => { 
-                moduleAttempts[2]++; 
-                if (i === qs.c) { 
-                    feedback.style.color="#10b981"; 
-                    feedback.textContent="✅ Correct!"; 
-                    backBtn.disabled=false; 
-                    backBtn.style.opacity="1"; 
-                    awardBadge(currentSectorNum, 2);
-                } else { 
-                    feedback.style.color="#ef4444";
-                    feedback.textContent="❌ Try again."; 
-                } 
-            };
-            mContent.appendChild(b);
-        });
-    }
-
-    // AUTOFILL FUNCTIONALITY
-    autofillBtn.onclick = async () => {
-        try {
-            usedAutofill = true;
-            feedback.textContent = '⏳ Fetching answer...';
-            feedback.style.color = '#06b6d4';
-            
-            const response = await fetch(`${window.API_URL}/autofill`, {
-                ...window.authOptions,
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    sector_id: currentSectorNum,
-                    question_num: currentQuestion
-                })
-            });
-
-            if (!response.ok) {
-                throw new Error('Failed to fetch answer');
-            }
-
-            const data = await response.json();
-            
-            if (data.success) {
-                if (currentQuestion === 0) {
-                    document.getElementById('rcInput').value = data.answer;
-                    feedback.textContent = '✨ Answer filled! Click "Execute Command" to run.';
-                    feedback.style.color = '#a855f7';
-                } else if (currentQuestion === 1) {
-                    if (!currentPseudo.question_id) {
-                        feedback.textContent = '❌ No pseudocode question loaded yet.';
-                        feedback.style.color = '#ef4444';
-                        return;
-                    }
-
-                    const url = `${window.PSEUDOCODE_BANK_URL}/ai_autofill?question_id=${encodeURIComponent(currentPseudo.question_id)}&level=${encodeURIComponent(currentPseudo.level || "")}`;
-                    const aiRes = await fetch(url, {
-                        ...window.authOptions,
-                        method: 'GET'
-                    });
-
-                    const aiData = await aiRes.json().catch(() => ({}));
-                    if (!aiRes.ok || !aiData.success) {
-                        throw new Error(aiData.message || 'Failed to AI autofill pseudocode');
-                    }
-
-                    document.getElementById('pcCode').value = aiData.answer;
-                    feedback.textContent = '✨ AI answer filled! Click "Generate + Check Answer" to grade.';
-                    feedback.style.color = '#a855f7';
-                } else if (currentQuestion === 2) {
-                    const buttons = mContent.querySelectorAll('.btn');
-                    if (buttons[data.answer]) {
-                        buttons[data.answer].click();
-                        feedback.textContent = '✨ Correct answer selected!';
-                        feedback.style.color = '#10b981';
-                    }
-                }
-            } else {
-                feedback.textContent = '❌ ' + (data.message || 'Failed to get answer');
-                feedback.style.color = '#ef4444';
-            }
-        } catch (error) {
-            console.error('Autofill error:', error);
-            feedback.textContent = '❌ Error connecting to server';
-            feedback.style.color = '#ef4444';
-        }
-    };
-
-    backBtn.onclick = async () => {
-        if (usedAutofill) {
-            finalScore = 0;
+    mContent.innerHTML = `<p style="color:white; margin-bottom:15px; font-size:16px;">${qs.q}</p>`;
+    qs.a.forEach((opt, i) => {
+      const b = document.createElement('button');
+      b.className = 'btn';
+      b.style = "background:#334155; color:white; margin-bottom:8px; width:100%; text-align:left;";
+      b.textContent = opt;
+      b.onclick = () => {
+        moduleAttempts[2]++;
+        if (i === qs.c) {
+          feedback.style.color="#10b981";
+          feedback.textContent="✅ Correct!";
+          backBtn.disabled=false;
+          backBtn.style.opacity="1";
+          awardBadge(currentSectorNum, 2);
         } else {
-            let weightedSum = 0;
-            const pts = moduleAttempts.map(a => Math.max(1, 6 - a));
-            for (let i=0; i<3; i++) weightedSum += (pts[i]/5) * weights[i];
-            finalScore = weightedSum * 100;
+          feedback.style.color="#ef4444";
+          feedback.textContent="❌ Try again.";
         }
-        
-        mContent.innerHTML = `
-            <div class="summary-card">
-                <h3 style="color:#fbbf24; margin-bottom:10px;">SECTOR RESULTS</h3>
-                <div class="summary-row"><span>Total Score:</span><span>${Math.round(finalScore)}%</span></div>
-                <button class="btn btn-blue" id="finalCloseBtn" style="width:100%">Continue</button>
-            </div>`;
-        document.getElementById('finalCloseBtn').onclick = closeSector;
-    };
-
-    function closeSector() {
-        modal.classList.remove('active');
-        completedSectors.add(currentSectorNum);
-        saveProgress(currentSectorNum, 2, finalScore || 0);
-        drawMaze();
-        updateProgressBar();
-        updateBotIconVisibility();
-        conversationHistory = [];
-    }
-
-    function movePlayer(dx, dy) {
-        const nx = playerPos.x + dx, ny = playerPos.y + dy;
-        if (ny >= 0 && ny < mazeLayout.length && nx >= 0 && nx < mazeLayout[0].length && mazeLayout[ny][nx] !== 0) {
-            playerPos.x = nx;
-            playerPos.y = ny;
-            drawMaze();
-            const val = mazeLayout[ny][nx];
-            if (val >= 4 && val <= 8) {
-                const sNum = val - 3;
-                if (sNum > 1 && !completedSectors.has(sNum - 1)) {
-                    alert("⚠️ Complete previous sector first!");
-                    return;
-                }
-                currentSectorNum = sNum;
-                currentQuestion = 0;
-                moduleAttempts = [0, 0, 0];
-                usedAutofill = false;
-                finalScore = 0;
-                conversationHistory = [];
-                setTimeout(() => {
-                    modal.classList.add('active');
-                    showQuestion();
-                }, 100);
-            } else if (val === 3) {
-                alert("🎉 Congratulations! You've reached the end!");
-            }
-        }
-    }
-
-    nextBtn.onclick = () => {
-        currentQuestion++;
-        showQuestion();
-        updateBotIconVisibility();
-    };
-
-    document.addEventListener('keydown', e => {
-        // --- SECRET SKIP BYPASS (SHIFT + S) ---
-        if (e.key === 'S' && e.shiftKey && modal.classList.contains('active')) {
-            awardBadge(currentSectorNum, currentQuestion);
-            nextBtn.disabled = false;
-            nextBtn.style.opacity = "1";
-            if (currentQuestion === 2) { backBtn.disabled = false; backBtn.style.opacity = "1"; }
-            feedback.textContent = "🤫 Secret Skip Activated";
-            feedback.style.color = "#a855f7";
-            return;
-        }
-
-        if (modal.classList.contains('active')) return;
-        if (e.key === 'ArrowUp') movePlayer(0, -1);
-        if (e.key === 'ArrowDown') movePlayer(0, 1);
-        if (e.key === 'ArrowLeft') movePlayer(-1, 0);
-        if (e.key === 'ArrowRight') movePlayer(1, 0);
+      };
+      mContent.appendChild(b);
     });
+  }
 
+  // ✅ Autofill with AI-first + fallback (this fixes your “pseudocode autofill isn’t working”)
+  autofillBtn.onclick = async () => {
+    try {
+      usedAutofill = true;
+      feedback.textContent = '⏳ Fetching answer...';
+      feedback.style.color = '#06b6d4';
+
+      // Sector robot/mcq autofill still uses /api/robop/autofill (your existing endpoint)
+      if (currentQuestion === 0 || currentQuestion === 2) {
+        const response = await fetch(`${window.API_URL}/autofill`, {
+          ...window.authOptions,
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sector_id: currentSectorNum, question_num: currentQuestion })
+        });
+
+        if (!response.ok) throw new Error('Failed to fetch answer');
+        const data = await response.json().catch(() => ({}));
+        if (!data.success) throw new Error(data.message || 'Failed to get answer');
+
+        if (currentQuestion === 0) {
+          document.getElementById('rcInput').value = data.answer;
+          feedback.textContent = '✨ Answer filled! Click "Execute Command" to run.';
+          feedback.style.color = '#a855f7';
+          return;
+        }
+
+        if (currentQuestion === 2) {
+          const buttons = mContent.querySelectorAll('.btn');
+          if (buttons[data.answer]) buttons[data.answer].click();
+          return;
+        }
+      }
+
+      // Pseudocode autofill (Question 1): try /api/pseudocode_bank/ai_autofill first, then fallback to /api/robop/autofill
+      if (currentQuestion === 1) {
+        if (!currentPseudo.question_id) {
+          feedback.textContent = '❌ No pseudocode question loaded yet.';
+          feedback.style.color = '#ef4444';
+          return;
+        }
+
+        // 1) AI attempt
+        let aiAnswer = null;
+        try {
+          const url = `${window.PSEUDOCODE_BANK_URL}/ai_autofill?question_id=${encodeURIComponent(currentPseudo.question_id)}&level=${encodeURIComponent(currentPseudo.level || "")}`;
+          const aiRes = await fetch(url, { ...window.authOptions, method: 'GET' });
+          const aiData = await aiRes.json().catch(() => ({}));
+
+          if (aiRes.ok && aiData.success && aiData.answer) aiAnswer = aiData.answer;
+        } catch (e) {
+          aiAnswer = null;
+        }
+
+        // 2) Fallback if AI missing/slow/broken
+        if (!aiAnswer) {
+          const fallbackRes = await fetch(`${window.API_URL}/autofill`, {
+            ...window.authOptions,
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ question_id: currentPseudo.question_id, level: currentPseudo.level })
+          });
+
+          const fbData = await fallbackRes.json().catch(() => ({}));
+          if (!fallbackRes.ok || !fbData.success) {
+            throw new Error(fbData.message || 'Failed to autofill pseudocode');
+          }
+
+          aiAnswer = fbData.answer;
+          feedback.textContent = '✨ Filled (fallback). Click "Generate + Check Answer" to grade.';
+          feedback.style.color = '#a855f7';
+        } else {
+          feedback.textContent = '✨ AI answer filled! Click "Generate + Check Answer" to grade.';
+          feedback.style.color = '#a855f7';
+        }
+
+        document.getElementById('pcCode').value = aiAnswer;
+        return;
+      }
+
+    } catch (error) {
+      console.error('Autofill error:', error);
+      feedback.textContent = '❌ Error connecting to server';
+      feedback.style.color = '#ef4444';
+    }
+  };
+
+  backBtn.onclick = async () => {
+    if (usedAutofill) {
+      finalScore = 0;
+    } else {
+      let weightedSum = 0;
+      const pts = moduleAttempts.map(a => Math.max(1, 6 - a));
+      for (let i=0; i<3; i++) weightedSum += (pts[i]/5) * weights[i];
+      finalScore = weightedSum * 100;
+    }
+
+    mContent.innerHTML = `
+      <div class="summary-card">
+        <h3 style="color:#fbbf24; margin-bottom:10px;">SECTOR RESULTS</h3>
+        <div class="summary-row"><span>Total Score:</span><span>${Math.round(finalScore)}%</span></div>
+        <button class="btn btn-blue" id="finalCloseBtn" style="width:100%">Continue</button>
+      </div>
+    `;
+    document.getElementById('finalCloseBtn').onclick = closeSector;
+  };
+
+  function closeSector() {
+    modal.classList.remove('active');
+    completedSectors.add(currentSectorNum);
+    saveProgress(currentSectorNum, 2, finalScore || 0);
     drawMaze();
     updateProgressBar();
     updateBotIconVisibility();
-    updateBadgeUI();
-    helpBotIcon.style.display = 'flex';
-    loadProgress();
+    conversationHistory = [];
+  }
+
+  function movePlayer(dx, dy) {
+    const nx = playerPos.x + dx, ny = playerPos.y + dy;
+    if (ny >= 0 && ny < mazeLayout.length && nx >= 0 && nx < mazeLayout[0].length && mazeLayout[ny][nx] !== 0) {
+      playerPos.x = nx;
+      playerPos.y = ny;
+      drawMaze();
+
+      const val = mazeLayout[ny][nx];
+      if (val >= 4 && val <= 8) {
+        const sNum = val - 3;
+        if (sNum > 1 && !completedSectors.has(sNum - 1)) {
+          alert("⚠️ Complete previous sector first!");
+          return;
+        }
+        currentSectorNum = sNum;
+        currentQuestion = 0;
+        moduleAttempts = [0, 0, 0];
+        usedAutofill = false;
+        finalScore = 0;
+        conversationHistory = [];
+
+        setTimeout(() => {
+          modal.classList.add('active');
+          showQuestion();
+        }, 100);
+
+      } else if (val === 3) {
+        alert("🎉 Congratulations! You've reached the end!");
+      }
+    }
+  }
+
+  nextBtn.onclick = () => {
+    currentQuestion++;
+    showQuestion();
+    updateBotIconVisibility();
+  };
+
+  document.addEventListener('keydown', e => {
+    // secret bypass (kept from your original)
+    if (e.key === 'S' && e.shiftKey && modal.classList.contains('active')) {
+      awardBadge(currentSectorNum, currentQuestion);
+      nextBtn.disabled = false;
+      nextBtn.style.opacity = "1";
+      if (currentQuestion === 2) { backBtn.disabled = false; backBtn.style.opacity = "1"; }
+      feedback.textContent = "🤫 Secret Skip Activated";
+      feedback.style.color = "#a855f7";
+      return;
+    }
+
+    if (modal.classList.contains('active')) return;
+    if (e.key === 'ArrowUp') movePlayer(0, -1);
+    if (e.key === 'ArrowDown') movePlayer(0, 1);
+    if (e.key === 'ArrowLeft') movePlayer(-1, 0);
+    if (e.key === 'ArrowRight') movePlayer(1, 0);
+  });
+
+  // ✅ IMPORTANT: load progress before drawing UI
+  loadProgress();
+  drawMaze();
+  updateProgressBar();
+  updateBotIconVisibility();
+  updateBadgeUI();
+  helpBotIcon.style.display = 'flex';
 </script>
 </body>
 </html>
