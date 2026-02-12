@@ -9,7 +9,7 @@ permalink: /learninggame/home
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
 
-  /* Page: keep centered, no page scroll (scroll happens INSIDE the container) */
+  /* FIX: page can scroll if needed, but main scrolling still happens INSIDE the app */
   body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     background: linear-gradient(135deg, #020617 0%, #0f172a 50%, #1e1b4b 100%);
@@ -17,8 +17,9 @@ permalink: /learninggame/home
     width: 100%;
     display: flex;
     justify-content: center;
-    align-items: center;
-    overflow: hidden;          /* IMPORTANT: prevents page scroll */
+    align-items: flex-start;      /* FIX: prevents top clipping */
+    overflow-x: hidden;           /* allow vertical scroll if viewport is tiny */
+    overflow-y: auto;
     position: relative;
     padding: 24px;
   }
@@ -44,17 +45,19 @@ permalink: /learninggame/home
     pointer-events: none;
   }
 
-  /* App container: centered + fixed viewport-ish size */
+  /* App container: fixed viewport-ish size, internal scrolling */
   .container {
     position: relative;
     width: min(900px, 95vw);
-    height: min(860px, calc(100vh - 48px)); /* IMPORTANT: fits screen */
+    height: min(860px, calc(100vh - 48px));   /* app fits viewport */
+    min-height: 740px;
+    max-height: calc(100vh - 48px);
     background: rgba(15, 23, 42, 0.85);
     backdrop-filter: blur(20px);
     border-radius: 24px;
     border: 2px solid rgba(6,182,212,0.4);
     box-shadow: 0 0 60px rgba(6,182,212,0.25);
-    overflow: hidden; /* IMPORTANT: internal scroll lives in .scroll-area */
+    overflow: hidden; /* internal scroll lives in .scroll-area */
     z-index: 1;
     display: flex;
     flex-direction: column;
@@ -76,9 +79,10 @@ permalink: /learninggame/home
   /* Scroll INSIDE the app */
   .scroll-area {
     flex: 1;
-    overflow-y: auto;          /* IMPORTANT: this is the scroll you want */
+    overflow-y: auto;
     overflow-x: hidden;
     padding-bottom: 18px;
+    min-height: 0; /* critical for flex children scrolling */
   }
   .scroll-area::-webkit-scrollbar { width: 7px; }
   .scroll-area::-webkit-scrollbar-track { background: rgba(30, 41, 59, 0.25); border-radius: 6px; }
@@ -197,10 +201,9 @@ permalink: /learninggame/home
     padding: 14px 18px 18px 18px;
   }
 
-  /* Maze: slightly smaller + centered */
   .maze {
     width: 100%;
-    max-width: 760px;        /* IMPORTANT: not huge */
+    max-width: 820px;
     height: auto;
     aspect-ratio: 15 / 11;
     background: rgba(2, 6, 23, 0.5);
@@ -651,7 +654,6 @@ permalink: /learninggame/home
   const AUTH = {
     ...fetchOptions,
     credentials: (fetchOptions && fetchOptions.credentials) ? fetchOptions.credentials : "include",
-    // mode: "cors" is safe even same-origin; browser will still enforce CORS rules
     mode: "cors"
   };
 
@@ -1309,7 +1311,7 @@ ${err.message}
     out.push("// Exported from pseudocode (display-only)");
     out.push("// Not executed. Used for checking structure.\n");
     out.push("function solution() {");
-    for (let line of lines) out.push(\`  // \${line}\`);
+    for (let line of lines) out.push(`  // ${line}`);
     out.push("}\n");
     out.push("solution();");
     return out.join("\n");
@@ -1387,8 +1389,8 @@ ${err.message}
       console.error(err);
       feedback.style.color = "#ef4444";
       feedback.textContent = "❌ Error connecting to checker.";
-      const output = document.getElementById("pcOutput");
-      if (output) output.textContent = err.message;
+      const out = document.getElementById("pcOutput");
+      if (out) out.textContent = err.message;
     }
   }
 
@@ -1425,90 +1427,88 @@ ${err.message}
   }
 
   // ---------- FIXED AUTOFILL ----------
-  confirmingAutofillBtn();
-  function confirmingAutofillBtn() {
-    autofillBtn.onclick = async () => {
-      try {
-        usedAutofill = true;
-        feedback.textContent = '⏳ Fetching answer...';
-        feedback.style.color = '#06b6d4';
+  autofillBtn.onclick = async () => {
+    try {
+      usedAutofill = true;
+      feedback.textContent = '⏳ Fetching answer...';
+      feedback.style.color = '#06b6d4';
 
-        if (currentQuestion === 0 || currentQuestion === 2) {
-          const data = await fetchJSON(`${window.API_URL}/autofill`, {
-            method: "POST",
-            body: JSON.stringify({ sector_id: currentSectorNum, question_num: currentQuestion })
-          });
+      if (currentQuestion === 0 || currentQuestion === 2) {
+        const data = await fetchJSON(`${window.API_URL}/autofill`, {
+          method: "POST",
+          body: JSON.stringify({ sector_id: currentSectorNum, question_num: currentQuestion })
+        });
 
-          if (!data.success) throw new Error(data.message || "Autofill failed.");
+        if (!data.success) throw new Error(data.message || "Autofill failed.");
 
-          if (currentQuestion === 0) {
-            document.getElementById('rcInput').value = data.answer;
-            feedback.textContent = '✨ Answer filled! Click "Execute Command" to run.';
-            feedback.style.color = '#a855f7';
-            return;
-          }
-
-          if (currentQuestion === 2) {
-            const buttons = mContent.querySelectorAll('.btn');
-            if (buttons[data.answer]) buttons[data.answer].click();
-            return;
-          }
-        }
-
-        if (currentQuestion === 1) {
-          if (!currentPseudo.question_id) {
-            feedback.textContent = '❌ No pseudocode question loaded yet.';
-            feedback.style.color = '#ef4444';
-            return;
-          }
-
-          const payload = {
-            question_id: currentPseudo.question_id,
-            level: currentPseudo.level,
-            prompt: currentPseudo.question
-          };
-
-          let answer = null;
-          try {
-            const ai = await fetchJSON(`${window.PSEUDOCODE_BANK_URL}/ai_autofill`, {
-              method: "POST",
-              body: JSON.stringify(payload)
-            });
-            if (ai && ai.success && ai.answer) answer = ai.answer;
-          } catch (e) { answer = null; }
-
-          if (!answer) {
-            try {
-              const plain = await fetchJSON(`${window.PSEUDOCODE_BANK_URL}/autofill`, {
-                method: "POST",
-                body: JSON.stringify(payload)
-              });
-              if (plain && plain.success && plain.answer) answer = plain.answer;
-            } catch (e) { answer = null; }
-          }
-
-          if (!answer) {
-            const fb = await fetchJSON(`${window.API_URL}/autofill`, {
-              method: "POST",
-              body: JSON.stringify(payload)
-            });
-            if (!fb.success || !fb.answer) throw new Error(fb.message || "Failed to autofill pseudocode.");
-            answer = fb.answer;
-          }
-
-          document.getElementById('pcCode').value = answer;
-          feedback.textContent = '✨ Filled! Click "Generate + Check Answer" to grade.';
+        if (currentQuestion === 0) {
+          document.getElementById('rcInput').value = data.answer;
+          feedback.textContent = '✨ Answer filled! Click "Execute Command" to run.';
           feedback.style.color = '#a855f7';
           return;
         }
 
-      } catch (error) {
-        console.error('Autofill error:', error);
-        feedback.textContent = '❌ ' + (error.message || 'Error connecting to server');
-        feedback.style.color = '#ef4444';
+        if (currentQuestion === 2) {
+          const buttons = mContent.querySelectorAll('.btn');
+          if (buttons[data.answer]) buttons[data.answer].click();
+          return;
+        }
       }
-    };
-  }
+
+      if (currentQuestion === 1) {
+        if (!currentPseudo.question_id) {
+          feedback.textContent = '❌ No pseudocode question loaded yet.';
+          feedback.style.color = '#ef4444';
+          return;
+        }
+
+        const payload = {
+          question_id: currentPseudo.question_id,
+          level: currentPseudo.level,
+          prompt: currentPseudo.question
+        };
+
+        let answer = null;
+
+        try {
+          const ai = await fetchJSON(`${window.PSEUDOCODE_BANK_URL}/ai_autofill`, {
+            method: "POST",
+            body: JSON.stringify(payload)
+          });
+          if (ai && ai.success && ai.answer) answer = ai.answer;
+        } catch (e) { answer = null; }
+
+        if (!answer) {
+          try {
+            const plain = await fetchJSON(`${window.PSEUDOCODE_BANK_URL}/autofill`, {
+              method: "POST",
+              body: JSON.stringify(payload)
+            });
+            if (plain && plain.success && plain.answer) answer = plain.answer;
+          } catch (e) { answer = null; }
+        }
+
+        if (!answer) {
+          const fb = await fetchJSON(`${window.API_URL}/autofill`, {
+            method: "POST",
+            body: JSON.stringify(payload)
+          });
+          if (!fb.success || !fb.answer) throw new Error(fb.message || "Failed to autofill pseudocode.");
+          answer = fb.answer;
+        }
+
+        document.getElementById('pcCode').value = answer;
+        feedback.textContent = '✨ Filled! Click "Generate + Check Answer" to grade.';
+        feedback.style.color = '#a855f7';
+        return;
+      }
+
+    } catch (error) {
+      console.error('Autofill error:', error);
+      feedback.textContent = '❌ ' + (error.message || 'Error connecting to server');
+      feedback.style.color = '#ef4444';
+    }
+  };
   // ----------------------------------
 
   backBtn.onclick = async () => {
@@ -1597,6 +1597,7 @@ ${err.message}
     if (e.key === 'ArrowRight') movePlayer(1, 0);
   });
 
+  // init
   loadProgress();
   drawMaze();
   updateProgressBar();
