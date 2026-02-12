@@ -1,0 +1,19 @@
+nohup: ignoring input
+Configuration file: /home/rishabh2010/LearningGame/_config.yml
+            Source: /home/rishabh2010/LearningGame
+       Destination: /home/rishabh2010/LearningGame/_site
+ Incremental build: enabled
+      Generating... 
+      Remote Theme: Using theme jekyll/minima
+                    done in 131.181 seconds.
+[33m                    Auto-regeneration may not work on some Windows versions.[0m
+[33m                    Please see: https://github.com/Microsoft/BashOnWindows/issues/216[0m
+[33m                    If it does not work, please upgrade Bash on Windows or run Jekyll with --no-watch.[0m
+ Auto-regeneration: enabled for '/home/rishabh2010/LearningGame'
+LiveReload address: http://127.0.0.1:35729
+    Server address: http://127.0.0.1:4000/
+  Server running... press ctrl-c to stop.
+      Regenerating: 1 file(s) changed at 2026-02-12 10:51:07
+                    jekyll.log
+      Remote Theme: Using theme jekyll/minima
+        LiveReload: Browser connected
