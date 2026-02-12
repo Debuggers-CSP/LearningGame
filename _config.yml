@@ -33,6 +33,7 @@ exclude:
   - _notebooks
   - _docx
   - venv
+  - .venv
 
   - node_backend/
   - node_backend/node_modules/

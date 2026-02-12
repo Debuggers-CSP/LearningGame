@@ -8,7 +8,8 @@ const { Server } = require("socket.io");
 const { v4: uuidv4 } = require("uuid");
 
 const app = express();
-app.use(cors({ origin: "*", credentials: true }));
+app.use(cors({ origin: true, credentials: true }));
+app.options("*", cors({ origin: true, credentials: true }));
 app.use(express.json({ limit: "1mb" }));
 
 const dataDir = path.join(__dirname, "data");
@@ -258,7 +259,7 @@ app.get("/leaderboard", async (req, res) => {
 });
 
 const server = http.createServer(app);
-const io = new Server(server, { cors: { origin: "*" } });
+const io = new Server(server, { cors: { origin: true, credentials: true } });
 
 io.on("connection", (socket) => {
   const id = uuidv4();

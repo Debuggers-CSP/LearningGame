@@ -280,6 +280,7 @@ disable_login_script: true
               <button class="btn btn-primary" id="sendChat">Send</button>
             </div>
           </div>
+          </div>
 
         <div class="card">
           <h3>Action-Based Learning Focus</h3>
@@ -641,8 +642,16 @@ disable_login_script: true
         return rolePrefix() + ' Answer (code):\n' + (currentDebugProblem.answer || 'No answer available.');
       }
 
+      function getPythonRunnerBase() {
+        var params = new URLSearchParams(window.location.search);
+        var override = params.get('pythonRunner') || localStorage.getItem('python_runner_base');
+        if (override) return override;
+        return window.location.protocol + '//' + window.location.hostname + ':5001';
+      }
+
       function runPythonRequest(code, callback) {
-        fetch('http://127.0.0.1:5001/api/run-python', {
+        var base = getPythonRunnerBase();
+        fetch(base + '/api/run-python', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ code: code })
@@ -664,7 +673,7 @@ disable_login_script: true
             callback({ ok: true, data: result.data });
           })
           .catch(function () {
-            callback({ ok: false, error: 'Failed to reach the Python runner.' });
+            callback({ ok: false, error: 'Python runner is offline at ' + base + '. Start python_backend/app.py on port 5001.' });
           });
       }
 
