@@ -15,6 +15,12 @@ disable_login_script: true
       color: #e2e8f0;
       min-height: 100vh;
       padding: 20px 18px 28px;
+
+      /* ✅ centers the whole page content vertically + horizontally */
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
     }
     :root {
       --panel: rgba(15, 23, 42, 0.92);
@@ -32,6 +38,8 @@ disable_login_script: true
       border: 1px solid var(--panel-border);
       box-shadow: 0 18px 40px rgba(6, 12, 30, 0.45);
       padding: 28px;
+
+      /* keep horizontal centering */
       margin: 0 auto;
     }
     .header {
