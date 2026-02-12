@@ -6,7 +6,6 @@ authors: Anika, Cyrus, Rishabh, Jaynee, Lillian, Avantika, Meryl
 permalink: /learninggame/home
 ---
 
-<!doctype html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
