@@ -10,78 +10,221 @@ disable_login_script: true
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background: linear-gradient(135deg, #020617 0%, #0f172a 50%, #1e1b4b 100%);
+      background: radial-gradient(circle at top, rgba(37, 99, 235, 0.18), transparent 55%),
+        linear-gradient(145deg, #0b1120 0%, #0a1224 55%, #101a33 100%);
       color: #e2e8f0;
       min-height: 100vh;
-      padding: 30px;
+      padding: 20px 18px 28px;
+    }
+    :root {
+      --panel: rgba(15, 23, 42, 0.92);
+      --panel-subtle: rgba(8, 12, 24, 0.86);
+      --panel-border: rgba(148, 163, 184, 0.16);
+      --primary: #60a5fa;
+      --alert: #f87171;
+      --text-muted: #94a3b8;
+      --text-soft: #e2e8f0;
     }
     .end-container {
-      width: min(1100px, 95vw);
-      background: rgba(15, 23, 42, 0.88);
-      border-radius: 24px;
-      border: 2px solid rgba(59, 130, 246, 0.4);
-      box-shadow: 0 0 60px rgba(37, 99, 235, 0.25);
-      padding: 30px;
+      width: min(1200px, 94vw);
+      background: var(--panel);
+      border-radius: 22px;
+      border: 1px solid var(--panel-border);
+      box-shadow: 0 18px 40px rgba(6, 12, 30, 0.45);
+      padding: 28px;
       margin: 0 auto;
     }
     .header {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      gap: 20px;
-      padding-bottom: 15px;
-      border-bottom: 2px solid rgba(6,182,212,0.3);
+      gap: 18px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid rgba(148, 163, 184, 0.2);
     }
     .title {
       font-size: 28px;
-      font-weight: 900;
-      color: #06b6d4;
-      letter-spacing: 2px;
+      font-weight: 800;
+      color: var(--text-soft);
+      letter-spacing: 0.6px;
     }
     .subtitle {
-      color: rgba(148, 163, 184, 0.9);
+      color: var(--text-muted);
       font-size: 14px;
       font-family: 'Courier New', monospace;
     }
-    .grid {
+    .layout-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      grid-template-columns: 1.75fr 1fr;
+      gap: 24px;
+      margin-top: 24px;
+      align-items: start;
+    }
+    .column {
+      display: flex;
+      flex-direction: column;
       gap: 20px;
-      margin-top: 20px;
     }
     .card {
-      background: rgba(2, 6, 23, 0.7);
-      border: 1px solid rgba(148, 163, 184, 0.25);
-      border-radius: 16px;
+      background: var(--panel-subtle);
+      border: 1px solid var(--panel-border);
+      border-radius: 18px;
       padding: 18px;
     }
-    .card h3 { color: #fbbf24; margin-bottom: 12px; font-size: 16px; }
-    .helper-text { color: #94a3b8; font-size: 13px; line-height: 1.4; }
-    .btn-row { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; }
-    .btn { padding: 10px 16px; border-radius: 12px; border: none; cursor: pointer; font-weight: 800; text-transform: uppercase; }
-    .btn-primary { background: #3b82f6; color: white; }
-    .btn-ghost { background: transparent; border: 1px solid rgba(148, 163, 184, 0.3); color: #e2e8f0; }
-    .btn-toggle { background: rgba(30, 41, 59, 0.7); color: #e2e8f0; border: 1px solid rgba(148, 163, 184, 0.35); }
-    .btn-toggle.active { background: rgba(6, 182, 212, 0.35); border-color: rgba(6, 182, 212, 0.6); color: #e0f2fe; }
-    .level-pill { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 999px; border: 1px solid rgba(148, 163, 184, 0.4); background: rgba(15, 23, 42, 0.7); font-size: 12px; }
+    .card.hero {
+      padding: 24px;
+      border-radius: 20px;
+    }
+    .card h3 { color: var(--text-soft); margin-bottom: 10px; font-size: 16px; }
+    .helper-text { color: var(--text-muted); font-size: 12px; line-height: 1.55; }
+    .btn-row { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
+    .btn { padding: 10px 16px; border-radius: 12px; border: none; cursor: pointer; font-weight: 700; text-transform: uppercase; font-size: 12px; letter-spacing: 0.4px; }
+    .btn-primary { background: var(--primary); color: #0b1220; }
+    .btn-ghost { background: transparent; border: 1px solid rgba(148, 163, 184, 0.28); color: #e2e8f0; }
+    .btn-toggle { background: rgba(15, 23, 42, 0.85); color: #e2e8f0; border: 1px solid rgba(148, 163, 184, 0.35); }
+    .btn-toggle.active { background: rgba(96, 165, 250, 0.18); border-color: rgba(96, 165, 250, 0.5); color: #e0f2fe; }
+    .level-pill { display: inline-flex; align-items: center; gap: 6px; padding: 5px 10px; border-radius: 999px; border: 1px solid rgba(148, 163, 184, 0.3); background: rgba(15, 23, 42, 0.7); font-size: 11px; color: var(--text-muted); }
     .level-pill.active { border-color: rgba(34, 197, 94, 0.6); color: #bbf7d0; }
-    .code-block { background: #0f172a; border: 1px solid rgba(59, 130, 246, 0.4); border-radius: 10px; padding: 12px; color: #e2e8f0; font-family: 'Courier New', monospace; font-size: 13px; white-space: pre-wrap; min-height: 120px; margin: 10px 0; }
-    textarea { width: 100%; min-height: 140px; background: #0f172a; color: #38bdf8; border: 1px solid rgba(59, 130, 246, 0.4); border-radius: 10px; padding: 12px; font-family: 'Courier New', monospace; font-size: 13px; }
-    .status { margin-top: 10px; min-height: 20px; font-weight: 700; }
+    .code-block { background: #0c1428; border: 1px solid rgba(96, 165, 250, 0.25); border-radius: 12px; padding: 14px; color: #e2e8f0; font-family: 'Courier New', monospace; font-size: 12px; white-space: pre-wrap; min-height: 120px; margin: 12px 0; }
+    textarea { width: 100%; min-height: 140px; background: #0c1428; color: #e2e8f0; border: 1px solid rgba(96, 165, 250, 0.25); border-radius: 12px; padding: 12px; font-family: 'Courier New', monospace; font-size: 12px; }
+    .status { margin-top: 10px; min-height: 18px; font-weight: 700; font-size: 12px; }
     .status.ok { color: #22c55e; }
-    .status.err { color: #f87171; }
+    .status.err { color: var(--alert); }
     .locked { opacity: 0.5; pointer-events: none; }
     .chat-panel { display: flex; flex-direction: column; gap: 10px; }
-    .chat-log { min-height: 180px; max-height: 260px; overflow-y: auto; background: rgba(2, 6, 23, 0.6); border: 1px solid rgba(148, 163, 184, 0.25); border-radius: 12px; padding: 12px; display: flex; flex-direction: column; gap: 8px; font-size: 13px; }
-    .chat-bubble { padding: 8px 10px; border-radius: 10px; max-width: 90%; line-height: 1.4; }
-    .chat-user { background: rgba(59, 130, 246, 0.2); border: 1px solid rgba(59, 130, 246, 0.4); align-self: flex-end; color: #bfdbfe; }
-    .chat-ai { background: rgba(16, 185, 129, 0.18); border: 1px solid rgba(16, 185, 129, 0.35); align-self: flex-start; color: #bbf7d0; white-space: pre-line; }
+    .chat-log { min-height: 200px; max-height: 300px; overflow-y: auto; background: rgba(12, 20, 40, 0.7); border: 1px solid var(--panel-border); border-radius: 14px; padding: 14px; display: flex; flex-direction: column; gap: 10px; font-size: 12px; }
+    .chat-bubble { padding: 8px 10px; border-radius: 12px; max-width: 90%; line-height: 1.45; }
+    .chat-user { background: rgba(96, 165, 250, 0.14); border: 1px solid rgba(96, 165, 250, 0.3); align-self: flex-end; color: #dbeafe; }
+    .chat-ai { background: rgba(148, 163, 184, 0.12); border: 1px solid rgba(148, 163, 184, 0.2); align-self: flex-start; color: #e2e8f0; white-space: pre-line; }
     .chat-input { display: flex; gap: 8px; }
-    .chat-input input { flex: 1; background: #0f172a; color: #e2e8f0; border: 1px solid rgba(59, 130, 246, 0.4); border-radius: 10px; padding: 10px 12px; font-size: 13px; }
-    .role-badges { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0 12px; }
-    .role-badge { font-size: 12px; padding: 6px 10px; border-radius: 999px; border: 1px solid rgba(148, 163, 184, 0.35); background: rgba(30, 41, 59, 0.7); color: #e2e8f0; cursor: pointer; }
+    .chat-input input { flex: 1; background: #0c1428; color: #e2e8f0; border: 1px solid rgba(96, 165, 250, 0.25); border-radius: 12px; padding: 10px 12px; font-size: 12px; }
+    .role-badges { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0 10px; }
+    .role-badge { font-size: 11px; padding: 5px 9px; border-radius: 999px; border: 1px solid rgba(148, 163, 184, 0.35); background: rgba(30, 41, 59, 0.7); color: #e2e8f0; cursor: pointer; }
     .role-badge.active { border-color: rgba(16, 185, 129, 0.6); box-shadow: 0 0 10px rgba(16, 185, 129, 0.3); background: rgba(16, 185, 129, 0.2); color: #d1fae5; }
+
+    .end-summary {
+      width: min(1200px, 94vw);
+      margin: 0 auto 24px;
+      padding: 24px;
+      background: var(--panel);
+      border-radius: 22px;
+      border: 1px solid var(--panel-border);
+      color: #e2e8f0;
+    }
+    .summary-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 14px;
+      border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+      padding-bottom: 14px;
+      margin-bottom: 16px;
+    }
+    .summary-header h1 { margin: 0; font-size: 22px; color: var(--text-soft); }
+    .summary-header .subtitle { color: var(--text-muted); margin: 4px 0 0; font-size: 12px; }
+    .status-pill {
+      padding: 5px 12px;
+      border-radius: 999px;
+      background: rgba(96, 165, 250, 0.12);
+      border: 1px solid rgba(96, 165, 250, 0.35);
+      color: #dbeafe;
+      font-weight: 700;
+      font-size: 12px;
+    }
+    .summary-grid {
+      display: grid;
+      gap: 16px;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    }
+    .summary-grid .card {
+      background: var(--panel-subtle);
+      border: 1px solid var(--panel-border);
+      border-radius: 16px;
+      padding: 16px;
+    }
+    .summary-grid .card h2 { margin-top: 0; font-size: 14px; color: var(--text-soft); }
+    .summary-grid .row { display: flex; justify-content: space-between; padding: 6px 0; font-size: 12px; }
+    .badge-grid { display: grid; gap: 10px; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
+    .badge {
+      background: rgba(12, 20, 40, 0.7);
+      border: 1px solid rgba(96, 165, 250, 0.3);
+      border-radius: 12px;
+      padding: 10px;
+      font-size: 12px;
+    }
+    .badge.missing { opacity: 0.5; border-style: dashed; }
+    .summary-grid table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    .summary-grid th, .summary-grid td { text-align: left; padding: 8px 6px; border-bottom: 1px solid rgba(148, 163, 184, 0.2); }
+    .summary-grid th { color: var(--text-muted); font-weight: 600; }
+    .hidden { display: none; }
+
+    @media (max-width: 980px) {
+      body { padding: 18px; }
+      .end-container { padding: 20px; }
+      .end-summary { padding: 20px; }
+      .title { font-size: 24px; }
+      .layout-grid { grid-template-columns: 1fr; }
+      textarea { min-height: 120px; }
+      .chat-log { min-height: 180px; max-height: 260px; }
+    }
   </style>
+
+  <div class="end-summary">
+    <div class="summary-header">
+      <div>
+        <h1>Final Stop Summary</h1>
+        <p class="subtitle">Loading player progress from the backend…</p>
+      </div>
+      <div class="status-pill" id="liveStatus">Live</div>
+    </div>
+
+    <div class="summary-grid">
+      <div class="card" id="summaryLoading">
+        <h2>Loading…</h2>
+        <p>Fetching player, badges, and score data.</p>
+      </div>
+
+      <div class="card hidden" id="summaryError">
+        <h2>Error</h2>
+        <p id="errorMessage">Unable to load data.</p>
+      </div>
+
+      <div class="card hidden" id="playerCard">
+        <h2>Player</h2>
+        <div class="row"><span>Name:</span> <strong id="playerName">-</strong></div>
+        <div class="row"><span>ID:</span> <strong id="playerId">-</strong></div>
+        <div class="row"><span>Class:</span> <strong id="playerClass">-</strong></div>
+        <div class="row"><span>Joined:</span> <strong id="playerCreated">-</strong></div>
+      </div>
+
+      <div class="card hidden" id="scoreCard">
+        <h2>Score Summary</h2>
+        <div class="row"><span>Total Score:</span> <strong id="totalScore">0</strong></div>
+        <div class="row"><span>Last Updated:</span> <strong id="scoreUpdated">-</strong></div>
+      </div>
+
+      <div class="card hidden" id="badgeCard">
+        <h2>Badges Earned (5 total)</h2>
+        <div class="badge-grid" id="badgeGrid"></div>
+      </div>
+
+      <div class="card hidden" id="attemptsCard">
+        <h2>Attempts & Completion</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Stop</th>
+              <th>Attempts</th>
+              <th>Score</th>
+              <th>Completed At</th>
+            </tr>
+          </thead>
+          <tbody id="attemptRows"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
   <div class="end-container">
     <div class="header">
       <div>
@@ -90,68 +233,218 @@ disable_login_script: true
       </div>
     </div>
 
-    <div class="grid">
-      <div class="card" style="grid-column: 1 / -1;">
-        <h3>🎯 Action-Based Python Learning Challenges</h3>
-        <p class="helper-text">An algorithm processes actions in order, loops once per action, uses decisions, updates a result, and outputs the final result.</p>
-      </div>
-
-      <div class="card" style="grid-column: 1 / -1;">
-        <h3>🧩 Python “Debug the Code” Challenge</h3>
-        <p class="helper-text">Choose a level first, then start the challenge to load a broken code snippet.</p>
-      </div>
-
-      <div class="card" style="grid-column: 1 / -1;">
-        <h3>Choose Your Debug Level</h3>
-        <div class="btn-row" id="debugLevelButtons">
-          <button type="button" class="btn btn-toggle" data-level="beginner">🟢 Beginner</button>
-          <button type="button" class="btn btn-toggle" data-level="intermediate">🟡 Intermediate</button>
-          <button type="button" class="btn btn-toggle" data-level="hard">🔴 Hard</button>
-          <button type="button" class="btn btn-primary" id="startDebug">Start Challenge</button>
-        </div>
-        <div style="margin-top: 10px; display: flex; gap: 8px; flex-wrap: wrap;">
-          <span class="level-pill" id="levelStatus">Level: not selected</span>
-          <span class="level-pill" id="badgeStatus">Badges: none</span>
-        </div>
-      </div>
-
-      <div class="card" id="debugChallengeCard" style="grid-column: 1 / -1;">
-        <h3>Debug the Code (Your Level)</h3>
-        <div class="helper-text" id="debugProblemTitle">Select a level, then click Start Challenge to load your problem.</div>
-        <pre class="code-block" id="debugCode">No problem loaded yet.</pre>
-        <div class="helper-text" id="debugPrompt"></div>
-        <div class="helper-text">Paste corrected code only. Sentences will be rejected.</div>
-        <div>
-          <textarea id="debugAnswer" placeholder="Paste corrected code here..."></textarea>
-          <div class="btn-row">
-            <button class="btn btn-primary" id="submitDebug">Submit Fix</button>
-            <button class="btn btn-ghost" id="clearDebug">Clear</button>
+    <div class="layout-grid">
+      <div class="column">
+        <div class="card">
+          <h3>Choose Your Debug Level</h3>
+          <div class="btn-row" id="debugLevelButtons">
+            <button type="button" class="btn btn-toggle" data-level="beginner">🟢 Beginner</button>
+            <button type="button" class="btn btn-toggle" data-level="intermediate">🟡 Intermediate</button>
+            <button type="button" class="btn btn-toggle" data-level="hard">🔴 Hard</button>
+            <button type="button" class="btn btn-primary" id="startDebug">Start Challenge</button>
           </div>
-          <div class="status" id="debugStatus"></div>
-        </div>
-      </div>
-
-      <div class="card" style="grid-column: 1 / -1;">
-        <h3>💬 Hint Coach Chatbot</h3>
-        <p class="helper-text">ChatGPT provides 3 short hints first, then reveals the answer. If you paste code, it can run it in a sandbox and report output.</p>
-        <p class="helper-text">Guardrail: The answer is revealed only after 3 hints.</p>
-        <div class="chat-panel">
-          <div class="chat-log" id="chatLog">
-            <div class="chat-bubble chat-ai">ChatGPT: Tell me the level and what you think the bug is.</div>
+          <div style="margin-top: 12px; display: flex; gap: 10px; flex-wrap: wrap;">
+            <span class="level-pill" id="levelStatus">Level: not selected</span>
+            <span class="level-pill" id="badgeStatus">Badges: none</span>
           </div>
-          <div class="chat-input">
-            <input id="chatInput" type="text" placeholder="Ask for help (e.g., 'Where is the bug?')" />
-            <button class="btn btn-primary" id="sendChat">Send</button>
+        </div>
+
+        <div class="card hero" id="debugChallengeCard">
+          <h3>Debug the Code (Your Level)</h3>
+          <div class="helper-text" id="debugProblemTitle">Select a level, then click Start Challenge to load your problem.</div>
+          <pre class="code-block" id="debugCode">No problem loaded yet.</pre>
+          <div class="helper-text" id="debugPrompt"></div>
+          <div class="helper-text">Paste corrected code only. Sentences will be rejected.</div>
+          <div>
+            <textarea id="debugAnswer" placeholder="Paste corrected code here..."></textarea>
+            <div class="btn-row">
+              <button class="btn btn-primary" id="submitDebug">Submit Fix</button>
+              <button class="btn btn-ghost" id="clearDebug">Clear</button>
+            </div>
+            <div class="status" id="debugStatus"></div>
           </div>
         </div>
       </div>
 
-      <div class="card" style="grid-column: 1 / -1;">
-        <h3>🔗 System Summary (Many-to-Many)</h3>
-        <p class="helper-text">One player can earn many badges, and one badge can be earned by many different players. That creates a many-to-many relationship, so a Player Badges table is used to track which players have earned which badges.</p>
+      <div class="column">
+        <div class="card">
+          <h3>💬 Hint Coach Chatbot</h3>
+          <p class="helper-text">ChatGPT provides 3 short hints first, then reveals the answer. If you paste code, it can run it in a sandbox and report output.</p>
+          <p class="helper-text">Guardrail: The answer is revealed only after 3 hints.</p>
+          <div class="chat-panel">
+            <div class="chat-log" id="chatLog">
+              <div class="chat-bubble chat-ai">ChatGPT: Tell me the level and what you think the bug is.</div>
+            </div>
+            <div class="chat-input">
+              <input id="chatInput" type="text" placeholder="Ask for help (e.g., 'Where is the bug?')" />
+              <button class="btn btn-primary" id="sendChat">Send</button>
+            </div>
+          </div>
+
+        <div class="card">
+          <h3>Action-Based Learning Focus</h3>
+          <p class="helper-text">Algorithms process actions in order, loop per action, use decisions, update results, and output the final result.</p>
+          <p class="helper-text">Use the debug panel to validate each step and earn badges as you go.</p>
+        </div>
       </div>
     </div>
   </div>
+
+  <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+  <script>
+    (function () {
+      var API_BASE = window.location.protocol + '//' + window.location.hostname + ':3000';
+      var params = new URLSearchParams(window.location.search);
+      var playerId = localStorage.getItem('learninggame_player_id') || localStorage.getItem('player_id') || params.get('playerId') || params.get('id');
+      if (playerId) {
+        try { localStorage.setItem('learninggame_player_id', playerId); } catch (e) { }
+      }
+
+      var summaryLoading = document.getElementById('summaryLoading');
+      var summaryError = document.getElementById('summaryError');
+      var errorMessage = document.getElementById('errorMessage');
+      var playerCard = document.getElementById('playerCard');
+      var scoreCard = document.getElementById('scoreCard');
+      var badgeCard = document.getElementById('badgeCard');
+      var attemptsCard = document.getElementById('attemptsCard');
+      var liveStatus = document.getElementById('liveStatus');
+
+      var playerName = document.getElementById('playerName');
+      var playerIdEl = document.getElementById('playerId');
+      var playerClass = document.getElementById('playerClass');
+      var playerCreated = document.getElementById('playerCreated');
+      var totalScore = document.getElementById('totalScore');
+      var scoreUpdated = document.getElementById('scoreUpdated');
+      var badgeGrid = document.getElementById('badgeGrid');
+      var attemptRows = document.getElementById('attemptRows');
+
+      function setLoading(isLoading) {
+        if (isLoading) summaryLoading.classList.remove('hidden');
+        else summaryLoading.classList.add('hidden');
+      }
+
+      function setError(message) {
+        summaryError.classList.remove('hidden');
+        errorMessage.textContent = message;
+      }
+
+      function showCards() {
+        playerCard.classList.remove('hidden');
+        scoreCard.classList.remove('hidden');
+        badgeCard.classList.remove('hidden');
+        attemptsCard.classList.remove('hidden');
+      }
+
+      function formatDate(value) {
+        if (!value) return '-';
+        var date = new Date(value);
+        if (isNaN(date.getTime())) return value;
+        return date.toLocaleString();
+      }
+
+      function fetchJson(url) {
+        return fetch(url).then(function (res) {
+          if (!res.ok) throw new Error('Request failed (' + res.status + ')');
+          return res.json();
+        });
+      }
+
+      function renderBadges(badges) {
+        var allBadges = ['Stop 1 Badge', 'Stop 2 Badge', 'Stop 3 Badge', 'Stop 4 Badge', 'Stop 5 Badge'];
+        var earnedMap = {};
+        (badges || []).forEach(function (badge) {
+          earnedMap[badge.badgeName] = badge;
+        });
+        badgeGrid.innerHTML = '';
+        allBadges.forEach(function (name) {
+          var badge = earnedMap[name];
+          var div = document.createElement('div');
+          div.className = 'badge' + (badge ? '' : ' missing');
+          div.innerHTML = '<strong>' + name + '</strong><br>' + (badge ? 'Earned: ' + formatDate(badge.earnedAt) : 'Not earned');
+          badgeGrid.appendChild(div);
+        });
+      }
+
+      function renderAttempts(items) {
+        attemptRows.innerHTML = '';
+        if (!items || !items.length) {
+          var emptyRow = document.createElement('tr');
+          emptyRow.innerHTML = '<td colspan="4">No attempts recorded yet.</td>';
+          attemptRows.appendChild(emptyRow);
+          return;
+        }
+        items.forEach(function (item) {
+          var row = document.createElement('tr');
+          row.innerHTML = '<td>' + item.stopId + '</td>' +
+            '<td>' + item.attempts + '</td>' +
+            '<td>' + item.score + '</td>' +
+            '<td>' + formatDate(item.completedAt) + '</td>';
+          attemptRows.appendChild(row);
+        });
+      }
+
+      function updateUI(playerData, badgeData, scoreData) {
+        playerName.textContent = (playerData.player && playerData.player.display_name) || 'Unknown';
+        playerIdEl.textContent = (playerData.player && playerData.player.id) || playerId;
+        playerClass.textContent = (playerData.player && playerData.player.character_class) || '-';
+        playerCreated.textContent = formatDate(playerData.player && playerData.player.created_at);
+
+        totalScore.textContent = (scoreData.summary && scoreData.summary.totalScore != null) ? scoreData.summary.totalScore : 0;
+        scoreUpdated.textContent = formatDate(scoreData.summary && scoreData.summary.updatedAt);
+
+        renderBadges(badgeData.badges || []);
+        renderAttempts(scoreData.perStop || []);
+      }
+
+      function loadAll() {
+        if (!playerId) {
+          setLoading(false);
+          setError('Missing player id. Start the game to generate one.');
+          return;
+        }
+        setLoading(true);
+        summaryError.classList.add('hidden');
+
+        var safeId = encodeURIComponent(playerId);
+        Promise.all([
+          fetchJson(API_BASE + '/player/' + safeId),
+          fetchJson(API_BASE + '/player/' + safeId + '/badges'),
+          fetchJson(API_BASE + '/player/' + safeId + '/score')
+        ])
+          .then(function (results) {
+            updateUI(results[0], results[1], results[2]);
+            showCards();
+          })
+          .catch(function (err) {
+            setError('Failed to load player data from backend. ' + (err && err.message ? err.message : ''));
+          })
+          .finally(function () {
+            setLoading(false);
+          });
+      }
+
+      function setupLiveUpdates() {
+        try {
+          var socket = io(API_BASE, { transports: ['websocket'] });
+          socket.on('connect', function () {
+            liveStatus.textContent = 'Live';
+          });
+          socket.on('stateUpdate', function () {
+            loadAll();
+          });
+          socket.on('disconnect', function () {
+            liveStatus.textContent = 'Offline';
+          });
+        } catch (e) {
+          liveStatus.textContent = 'Offline';
+        }
+      }
+
+      loadAll();
+      setupLiveUpdates();
+      setInterval(loadAll, 15000);
+    })();
+  </script>
 
   <script>
     (function () {
