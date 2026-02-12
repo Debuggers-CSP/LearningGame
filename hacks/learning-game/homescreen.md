@@ -9,7 +9,7 @@ permalink: /learninggame/home
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
 
-  /* ---------- FIX: allow scrolling + keep centered ---------- */
+  /* Page: keep centered, no page scroll (scroll happens INSIDE the container) */
   body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     background: linear-gradient(135deg, #020617 0%, #0f172a 50%, #1e1b4b 100%);
@@ -17,11 +17,10 @@ permalink: /learninggame/home
     width: 100%;
     display: flex;
     justify-content: center;
-    align-items: flex-start;           /* was center; caused top clipping on smaller viewports */
-    overflow-x: hidden;               /* allow vertical scroll */
-    overflow-y: auto;                 /* FIX: scroll works */
+    align-items: center;
+    overflow: hidden;          /* IMPORTANT: prevents page scroll */
     position: relative;
-    padding: 24px 0;                  /* gives breathing room so content isn't glued to top */
+    padding: 24px;
   }
 
   .stars { position: fixed; inset: 0; overflow: hidden; z-index: 0; pointer-events: none; }
@@ -45,18 +44,17 @@ permalink: /learninggame/home
     pointer-events: none;
   }
 
-  /* ---------- FIX: container centered, not locked to 90vh ---------- */
+  /* App container: centered + fixed viewport-ish size */
   .container {
     position: relative;
-    width: min(900px, 94vw);
-    height: auto;                     /* was 90vh; caused cramped maze + no scroll */
-    min-height: 760px;                /* keeps it feeling “app-like” */
+    width: min(900px, 95vw);
+    height: min(860px, calc(100vh - 48px)); /* IMPORTANT: fits screen */
     background: rgba(15, 23, 42, 0.85);
     backdrop-filter: blur(20px);
     border-radius: 24px;
     border: 2px solid rgba(6,182,212,0.4);
     box-shadow: 0 0 60px rgba(6,182,212,0.25);
-    overflow: hidden;
+    overflow: hidden; /* IMPORTANT: internal scroll lives in .scroll-area */
     z-index: 1;
     display: flex;
     flex-direction: column;
@@ -74,6 +72,18 @@ permalink: /learninggame/home
   .title-header { display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 6px; }
   .title { color: #06b6d4; font-size: 24px; font-weight: 900; text-transform: uppercase; letter-spacing: 4px; }
   .subtitle { text-align: center; color: rgba(103,232,249,0.7); font-size: 12px; font-family: 'Courier New', monospace; }
+
+  /* Scroll INSIDE the app */
+  .scroll-area {
+    flex: 1;
+    overflow-y: auto;          /* IMPORTANT: this is the scroll you want */
+    overflow-x: hidden;
+    padding-bottom: 18px;
+  }
+  .scroll-area::-webkit-scrollbar { width: 7px; }
+  .scroll-area::-webkit-scrollbar-track { background: rgba(30, 41, 59, 0.25); border-radius: 6px; }
+  .scroll-area::-webkit-scrollbar-thumb { background: rgba(6,182,212,0.35); border-radius: 6px; }
+  .scroll-area::-webkit-scrollbar-thumb:hover { background: rgba(6,182,212,0.55); }
 
   .progress-bar-container {
     background: rgba(2, 6, 23, 0.6);
@@ -179,24 +189,20 @@ permalink: /learninggame/home
   }
 
   .maze-container {
-    flex-grow: 1;
     width: 100%;
     display: flex;
     flex-direction: column;
     justify-content: center;
-    align-items: center; /* center maze */
-    padding: 12px 18px 18px 18px;
-    min-height: 0;
-    overflow: visible;               /* FIX: avoid clipping maze area */
+    align-items: center;
+    padding: 14px 18px 18px 18px;
   }
 
-  /* ---------- FIX: make maze larger and centered ---------- */
+  /* Maze: slightly smaller + centered */
   .maze {
     width: 100%;
-    max-width: 860px;                /* was 750 */
+    max-width: 760px;        /* IMPORTANT: not huge */
     height: auto;
     aspect-ratio: 15 / 11;
-    max-height: none;                /* was 560; made it feel small */
     background: rgba(2, 6, 23, 0.5);
     backdrop-filter: blur(10px);
     border-radius: 20px;
@@ -204,7 +210,7 @@ permalink: /learninggame/home
     display: grid;
     grid-template-columns: repeat(15, 1fr);
     grid-template-rows: repeat(11, 1fr);
-    padding: 10px;                   /* slightly larger */
+    padding: 10px;
     gap: 3px;
     margin: 0 auto;
   }
@@ -254,11 +260,12 @@ permalink: /learninggame/home
     font-family: 'Courier New', monospace;
   }
 
+  /* Modal: fixed so it covers the app even if user scrolled inside */
   .question-modal {
     display: none;
-    position: absolute;
+    position: fixed;
     inset: 0;
-    z-index: 100;
+    z-index: 1200;
     justify-content: center;
     align-items: center;
     background: rgba(2, 6, 23, 0.92);
@@ -354,7 +361,7 @@ permalink: /learninggame/home
     border: 2px solid rgba(59, 130, 246, 0.4);
     border-radius: 16px;
     box-shadow: 0 0 40px rgba(59, 130, 246, 0.25);
-    z-index: 1000;
+    z-index: 2000;
     overflow: hidden;
     padding: 0;
     flex-direction: column;
@@ -501,65 +508,69 @@ permalink: /learninggame/home
     <div class="subtitle">Cadet Training Protocol // AI Assistant Enabled</div>
   </div>
 
-  <div class="progress-bar-container">
-    <div class="progress-header">STATION_INTEGRITY_MAP</div>
+  <!-- EVERYTHING BELOW SCROLLS INSIDE THE APP -->
+  <div class="scroll-area">
+    <div class="progress-bar-container">
+      <div class="progress-header">STATION_INTEGRITY_MAP</div>
 
-    <div class="progress-main">
-      <div class="progress-percentage" id="progressPercentage">0%</div>
-      <div class="progress-status" id="progressStatus">PROTOCOL_SYNCED</div>
-    </div>
-
-    <div class="progress-boxes" id="progressBoxes">
-      <div class="progress-box"></div><div class="progress-box"></div><div class="progress-box"></div>
-      <div class="progress-box"></div><div class="progress-box"></div><div class="progress-box"></div>
-      <div class="progress-box"></div><div class="progress-box"></div><div class="progress-box"></div>
-      <div class="progress-box"></div><div class="progress-box"></div><div class="progress-box"></div>
-      <div class="progress-box"></div><div class="progress-box"></div><div class="progress-box"></div>
-    </div>
-
-    <div class="badge-shelf" id="badgeShelf">
-      <span style="color: rgba(103,232,249,0.3); font-size: 9px; letter-spacing: 1px;">EARNED_BADGES: [EMPTY]</span>
-    </div>
-
-    <div class="progress-stats">
-      <div class="stat-item">
-        <span class="stat-value" id="statSectors">0/5</span>
-        <span class="stat-label">SECTORS</span>
+      <div class="progress-main">
+        <div class="progress-percentage" id="progressPercentage">0%</div>
+        <div class="progress-status" id="progressStatus">PROTOCOL_SYNCED</div>
       </div>
-      <div class="stat-item">
-        <span class="stat-value" id="statLocked">5</span>
-        <span class="stat-label">LOCKED</span>
-      </div>
-      <div class="stat-item">
-        <span class="stat-value" id="statConnected">CONNECTED</span>
-        <span class="stat-label">DATABASE</span>
-      </div>
-    </div>
-  </div>
 
-  <div class="maze-container">
-    <div class="maze" id="maze"></div>
-    <div class="controls-hint">Use arrow keys to navigate • Click 🤖 for AI help</div>
-  </div>
+      <div class="progress-boxes" id="progressBoxes">
+        <div class="progress-box"></div><div class="progress-box"></div><div class="progress-box"></div>
+        <div class="progress-box"></div><div class="progress-box"></div><div class="progress-box"></div>
+        <div class="progress-box"></div><div class="progress-box"></div><div class="progress-box"></div>
+        <div class="progress-box"></div><div class="progress-box"></div><div class="progress-box"></div>
+        <div class="progress-box"></div><div class="progress-box"></div><div class="progress-box"></div>
+      </div>
 
-  <div class="question-modal" id="questionModal">
-    <div class="question-card">
-      <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 20px;">
-        <div id="sectorBadge" style="background: #fbbf24; width: 45px; height: 45px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: black; font-weight: bold;">1</div>
-        <div>
-          <h2 id="mTitle" style="color: #06b6d4; text-transform: uppercase;">Sector 1</h2>
-          <p id="mSubtitle" style="color: rgba(103,232,249,0.7); font-family: monospace; font-size: 12px;">Navigation Task</p>
+      <div class="badge-shelf" id="badgeShelf">
+        <span style="color: rgba(103,232,249,0.3); font-size: 9px; letter-spacing: 1px;">EARNED_BADGES: [EMPTY]</span>
+      </div>
+
+      <div class="progress-stats">
+        <div class="stat-item">
+          <span class="stat-value" id="statSectors">0/5</span>
+          <span class="stat-label">SECTORS</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-value" id="statLocked">5</span>
+          <span class="stat-label">LOCKED</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-value" id="statConnected">CONNECTED</span>
+          <span class="stat-label">DATABASE</span>
         </div>
       </div>
+    </div>
 
-      <div id="moduleContent"></div>
-      <div id="feedback"></div>
+    <div class="maze-container">
+      <div class="maze" id="maze"></div>
+      <div class="controls-hint">Use arrow keys to navigate • Click 🤖 for AI help</div>
+    </div>
+  </div>
+</div>
 
-      <div style="display: flex; gap: 10px; margin-top: 20px;">
-        <button class="btn btn-blue" id="nextBtn">Next Module →</button>
-        <button class="btn btn-autofill" id="autofillBtn">✨ Autofill</button>
-        <button class="btn" id="backBtn" style="display:none; background: #10b981; color: white;">Calculate Results</button>
+<!-- Modal (fixed overlay) -->
+<div class="question-modal" id="questionModal">
+  <div class="question-card">
+    <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 20px;">
+      <div id="sectorBadge" style="background: #fbbf24; width: 45px; height: 45px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: black; font-weight: bold;">1</div>
+      <div>
+        <h2 id="mTitle" style="color: #06b6d4; text-transform: uppercase;">Sector 1</h2>
+        <p id="mSubtitle" style="color: rgba(103,232,249,0.7); font-family: monospace; font-size: 12px;">Navigation Task</p>
       </div>
+    </div>
+
+    <div id="moduleContent"></div>
+    <div id="feedback"></div>
+
+    <div style="display: flex; gap: 10px; margin-top: 20px;">
+      <button class="btn btn-blue" id="nextBtn">Next Module →</button>
+      <button class="btn btn-autofill" id="autofillBtn">✨ Autofill</button>
+      <button class="btn" id="backBtn" style="display:none; background: #10b981; color: white;">Calculate Results</button>
     </div>
   </div>
 </div>
@@ -678,7 +689,6 @@ permalink: /learninggame/home
       }
       return data;
     } catch (err) {
-      // This is the actual "Failed to fetch" category (CORS, DNS, server down, mixed content)
       const hint =
         `Network/CORS error calling:\n${finalUrl}\n\n` +
         `If your site and backend are different domains/ports, you MUST enable CORS on the backend.\n` +
@@ -982,7 +992,6 @@ permalink: /learninggame/home
     `;
   }
 
-  // hint panel
   function showAIAssistant() {
     if (!modal.classList.contains('active')) return;
 
@@ -1300,7 +1309,7 @@ ${err.message}
     out.push("// Exported from pseudocode (display-only)");
     out.push("// Not executed. Used for checking structure.\n");
     out.push("function solution() {");
-    for (let line of lines) out.push(`  // ${line}`);
+    for (let line of lines) out.push(\`  // \${line}\`);
     out.push("}\n");
     out.push("solution();");
     return out.join("\n");
@@ -1416,98 +1425,90 @@ ${err.message}
   }
 
   // ---------- FIXED AUTOFILL ----------
-  // Robot + MCQ: /api/robop/autofill (existing)
-  // Pseudocode: /api/pseudocode_bank/ai_autofill first, then /api/pseudocode_bank/autofill, then fallback /api/robop/autofill
-  autofillBtn.onclick = async () => {
-    try {
-      usedAutofill = true;
-      feedback.textContent = '⏳ Fetching answer...';
-      feedback.style.color = '#06b6d4';
+  confirmingAutofillBtn();
+  function confirmingAutofillBtn() {
+    autofillBtn.onclick = async () => {
+      try {
+        usedAutofill = true;
+        feedback.textContent = '⏳ Fetching answer...';
+        feedback.style.color = '#06b6d4';
 
-      // Robot / MCQ autofill
-      if (currentQuestion === 0 || currentQuestion === 2) {
-        const data = await fetchJSON(`${window.API_URL}/autofill`, {
-          method: "POST",
-          body: JSON.stringify({ sector_id: currentSectorNum, question_num: currentQuestion })
-        });
+        if (currentQuestion === 0 || currentQuestion === 2) {
+          const data = await fetchJSON(`${window.API_URL}/autofill`, {
+            method: "POST",
+            body: JSON.stringify({ sector_id: currentSectorNum, question_num: currentQuestion })
+          });
 
-        if (!data.success) throw new Error(data.message || "Autofill failed.");
+          if (!data.success) throw new Error(data.message || "Autofill failed.");
 
-        if (currentQuestion === 0) {
-          document.getElementById('rcInput').value = data.answer;
-          feedback.textContent = '✨ Answer filled! Click "Execute Command" to run.';
+          if (currentQuestion === 0) {
+            document.getElementById('rcInput').value = data.answer;
+            feedback.textContent = '✨ Answer filled! Click "Execute Command" to run.';
+            feedback.style.color = '#a855f7';
+            return;
+          }
+
+          if (currentQuestion === 2) {
+            const buttons = mContent.querySelectorAll('.btn');
+            if (buttons[data.answer]) buttons[data.answer].click();
+            return;
+          }
+        }
+
+        if (currentQuestion === 1) {
+          if (!currentPseudo.question_id) {
+            feedback.textContent = '❌ No pseudocode question loaded yet.';
+            feedback.style.color = '#ef4444';
+            return;
+          }
+
+          const payload = {
+            question_id: currentPseudo.question_id,
+            level: currentPseudo.level,
+            prompt: currentPseudo.question
+          };
+
+          let answer = null;
+          try {
+            const ai = await fetchJSON(`${window.PSEUDOCODE_BANK_URL}/ai_autofill`, {
+              method: "POST",
+              body: JSON.stringify(payload)
+            });
+            if (ai && ai.success && ai.answer) answer = ai.answer;
+          } catch (e) { answer = null; }
+
+          if (!answer) {
+            try {
+              const plain = await fetchJSON(`${window.PSEUDOCODE_BANK_URL}/autofill`, {
+                method: "POST",
+                body: JSON.stringify(payload)
+              });
+              if (plain && plain.success && plain.answer) answer = plain.answer;
+            } catch (e) { answer = null; }
+          }
+
+          if (!answer) {
+            const fb = await fetchJSON(`${window.API_URL}/autofill`, {
+              method: "POST",
+              body: JSON.stringify(payload)
+            });
+            if (!fb.success || !fb.answer) throw new Error(fb.message || "Failed to autofill pseudocode.");
+            answer = fb.answer;
+          }
+
+          document.getElementById('pcCode').value = answer;
+          feedback.textContent = '✨ Filled! Click "Generate + Check Answer" to grade.';
           feedback.style.color = '#a855f7';
           return;
         }
 
-        if (currentQuestion === 2) {
-          const buttons = mContent.querySelectorAll('.btn');
-          if (buttons[data.answer]) buttons[data.answer].click();
-          return;
-        }
+      } catch (error) {
+        console.error('Autofill error:', error);
+        feedback.textContent = '❌ ' + (error.message || 'Error connecting to server');
+        feedback.style.color = '#ef4444';
       }
-
-      // Pseudocode autofill
-      if (currentQuestion === 1) {
-        if (!currentPseudo.question_id) {
-          feedback.textContent = '❌ No pseudocode question loaded yet.';
-          feedback.style.color = '#ef4444';
-          return;
-        }
-
-        const payload = {
-          question_id: currentPseudo.question_id,
-          level: currentPseudo.level,
-          prompt: currentPseudo.question
-        };
-
-        // 1) try AI autofill (POST preferred)
-        let answer = null;
-        try {
-          const ai = await fetchJSON(`${window.PSEUDOCODE_BANK_URL}/ai_autofill`, {
-            method: "POST",
-            body: JSON.stringify(payload)
-          });
-          if (ai && ai.success && ai.answer) answer = ai.answer;
-        } catch (e) {
-          answer = null;
-        }
-
-        // 2) try plain autofill endpoint
-        if (!answer) {
-          try {
-            const plain = await fetchJSON(`${window.PSEUDOCODE_BANK_URL}/autofill`, {
-              method: "POST",
-              body: JSON.stringify(payload)
-            });
-            if (plain && plain.success && plain.answer) answer = plain.answer;
-          } catch (e) {
-            answer = null;
-          }
-        }
-
-        // 3) fallback: your existing robop autofill (in case you wired it there)
-        if (!answer) {
-          const fb = await fetchJSON(`${window.API_URL}/autofill`, {
-            method: "POST",
-            body: JSON.stringify(payload)
-          });
-          if (!fb.success || !fb.answer) throw new Error(fb.message || "Failed to autofill pseudocode.");
-          answer = fb.answer;
-        }
-
-        document.getElementById('pcCode').value = answer;
-        feedback.textContent = '✨ Filled! Click "Generate + Check Answer" to grade.';
-        feedback.style.color = '#a855f7';
-        return;
-      }
-
-    } catch (error) {
-      console.error('Autofill error:', error);
-      feedback.textContent = '❌ ' + (error.message || 'Error connecting to server');
-      feedback.style.color = '#ef4444';
-    }
-  };
+    };
+  }
   // ----------------------------------
 
   backBtn.onclick = async () => {
@@ -1596,7 +1597,6 @@ ${err.message}
     if (e.key === 'ArrowRight') movePlayer(1, 0);
   });
 
-  // IMPORTANT: load progress before drawing UI
   loadProgress();
   drawMaze();
   updateProgressBar();
