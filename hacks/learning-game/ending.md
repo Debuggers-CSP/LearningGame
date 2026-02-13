@@ -1,5 +1,5 @@
 ---
-layout: base
+layout: opencs
 title: Maze - Ending Page
 authors: Rishabh
 permalink: /learninggame/ending/
@@ -7,209 +7,188 @@ disable_login_script: true
 ---
 
 <style>
-  /* ---------- BASE RESET ---------- */
-  html, body { height: 100%; }
-  body { margin: 0 !important; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
 
-  * { box-sizing: border-box; }
+  /* Hide the global top header (the "Class of 2026" + wifi symbol bar) */
+  body > header,
+  body > nav,
+  #header,
+  .site-header,
+  .top-bar,
+  .topbar,
+  .navbar,
+  .navbar-container {
+    display: none !important;
+  }
 
   :root {
-    --panel: rgba(15, 23, 42, 0.92);
-    --panel-subtle: rgba(8, 12, 24, 0.86);
-    --panel-border: rgba(148, 163, 184, 0.16);
-    --primary: #60a5fa;
-    --alert: #f87171;
-    --text-muted: #94a3b8;
-    --text-soft: #e2e8f0;
+    --panel: rgba(15, 23, 42, 0.85);
+    --panel-subtle: rgba(2, 6, 23, 0.55);
+    --border-cyan: rgba(6,182,212,0.4);
+    --border-emerald: rgba(16,185,129,0.3);
+    --text: #e2e8f0;
+    --muted: rgba(103,232,249,0.65);
+    --warn: #fbbf24;
+    --ok: #10b981;
+    --bad: #ef4444;
   }
 
-  /* Page background stays on body */
   body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background:
-      radial-gradient(circle at top, rgba(37, 99, 235, 0.18), transparent 55%),
-      linear-gradient(145deg, #0b1120 0%, #0a1224 55%, #101a33 100%);
-    color: #e2e8f0;
-    overflow-x: hidden;
-  }
-
-  /* =========================================================
-     ✅ FIX: BREAK OUT OF BASE LAYOUT CONTAINER
-     If layout:base wraps content in a centered max-width container,
-     this makes our page full-bleed again so BOTH panels center evenly.
-     ========================================================= */
-  .ending-fullbleed {
-    width: 100vw;
-    margin-left: calc(50% - 50vw);
-    margin-right: calc(50% - 50vw);
-  }
-
-  /* ✅ Real centering container */
-  #endingPage {
+    background: linear-gradient(135deg, #020617 0%, #0f172a 50%, #1e1b4b 100%);
     min-height: 100vh;
     width: 100%;
-    padding: 20px 18px 28px;
+    overflow-x: hidden;
+    overflow-y: auto;
+    position: relative;
+    padding: 24px;
+    color: var(--text);
+  }
 
+  /* Background layers */
+  .stars { position: fixed; inset: 0; overflow: hidden; z-index: 0; pointer-events: none; }
+  .star { position: absolute; width: 2px; height: 2px; background: white; border-radius: 50%; animation: twinkle 3s infinite; }
+  @keyframes twinkle { 0%, 100% { opacity: 0.3; } 50% { opacity: 1; } }
+
+  body::before {
+    content: '';
+    position: fixed; top: 10%; left: 10%;
+    width: 500px; height: 500px;
+    background: radial-gradient(circle, rgba(6,182,212,0.15), transparent 70%);
+    filter: blur(80px);
+    z-index: 0;
+    pointer-events: none;
+  }
+  body::after {
+    content: '';
+    position: fixed; bottom: 10%; right: 10%;
+    width: 500px; height: 500px;
+    background: radial-gradient(circle, rgba(168,85,247,0.15), transparent 70%);
+    filter: blur(80px);
+    z-index: 0;
+    pointer-events: none;
+  }
+
+  .ending-root {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    position: relative;
+    z-index: 2;
+  }
+
+  #endingPage {
+    width: min(1200px, 96vw);
+    min-height: calc(100vh - 48px);
     display: flex;
     flex-direction: column;
-    justify-content: center;  /* vertical center */
-    align-items: center;      /* horizontal center */
-    gap: 24px;                /* spacing between summary + main panel */
+    gap: 18px;
   }
 
-  /* Force both major blocks to use the SAME width + align */
-  .end-summary,
-  .end-container {
-    width: min(1200px, 94vw);
-    align-self: center;
-  }
-
-  .end-container {
+  .panel {
     background: var(--panel);
-    border-radius: 22px;
-    border: 1px solid var(--panel-border);
-    box-shadow: 0 18px 40px rgba(6, 12, 30, 0.45);
-    padding: 28px;
-    margin: 0;
+    backdrop-filter: blur(20px);
+    border-radius: 24px;
+    border: 2px solid var(--border-cyan);
+    box-shadow: 0 0 60px rgba(6,182,212,0.22);
+    overflow: hidden;
   }
 
-  .end-summary {
-    padding: 24px;
-    background: var(--panel);
-    border-radius: 22px;
-    border: 1px solid var(--panel-border);
-    color: #e2e8f0;
-    margin: 0;
+  .title-section {
+    width: 100%;
+    background: rgba(15,23,42,0.95);
+    padding: 14px 18px;
+    border-bottom: 2px solid rgba(6,182,212,0.3);
   }
 
-  .summary-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 14px;
-    border-bottom: 1px solid rgba(148, 163, 184, 0.2);
-    padding-bottom: 14px;
-    margin-bottom: 16px;
-  }
+  .title-header { display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 6px; }
+  .title { color: #06b6d4; font-size: 22px; font-weight: 900; text-transform: uppercase; letter-spacing: 4px; }
+  .subtitle { text-align: center; color: var(--muted); font-size: 12px; font-family: 'Courier New', monospace; }
 
-  .summary-header h1 { margin: 0; font-size: 22px; color: var(--text-soft); }
-  .summary-header .subtitle { color: var(--text-muted); margin: 4px 0 0; font-size: 12px; }
-
-  .status-pill {
-    padding: 5px 12px;
-    border-radius: 999px;
-    background: rgba(96, 165, 250, 0.12);
-    border: 1px solid rgba(96, 165, 250, 0.35);
-    color: #dbeafe;
-    font-weight: 700;
-    font-size: 12px;
-    white-space: nowrap;
+  .content {
+    padding: 18px;
   }
 
   .summary-grid {
     display: grid;
-    gap: 16px;
+    gap: 14px;
     grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
   }
 
-  .summary-grid .card {
+  .card {
     background: var(--panel-subtle);
-    border: 1px solid var(--panel-border);
-    border-radius: 16px;
+    border: 2px solid var(--border-emerald);
+    border-radius: 20px;
     padding: 16px;
   }
 
-  .summary-grid .card h2 { margin-top: 0; font-size: 14px; color: var(--text-soft); }
-  .summary-grid .row { display: flex; justify-content: space-between; padding: 6px 0; font-size: 12px; }
+  .card h2 {
+    margin: 0 0 10px 0;
+    font-size: 13px;
+    color: var(--warn);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
 
-  .badge-grid { display: grid; gap: 10px; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
+  .row { display: flex; justify-content: space-between; gap: 10px; padding: 6px 0; font-size: 12px; border-bottom: 1px solid rgba(148,163,184,0.12); }
+  .row:last-child { border-bottom: none; }
 
+  .status-pill {
+    padding: 5px 12px;
+    border-radius: 999px;
+    background: rgba(6,182,212,0.12);
+    border: 1px solid rgba(6,182,212,0.35);
+    color: #dbeafe;
+    font-weight: 800;
+    font-size: 11px;
+    white-space: nowrap;
+  }
+
+  .badge-grid { display: grid; gap: 10px; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); }
   .badge {
-    background: rgba(12, 20, 40, 0.7);
-    border: 1px solid rgba(96, 165, 250, 0.3);
-    border-radius: 12px;
+    background: rgba(2, 6, 23, 0.45);
+    border: 1px solid rgba(6,182,212,0.28);
+    border-radius: 14px;
     padding: 10px;
     font-size: 12px;
   }
-  .badge.missing { opacity: 0.5; border-style: dashed; }
+  .badge.missing { opacity: 0.55; border-style: dashed; }
 
-  .summary-grid table { width: 100%; border-collapse: collapse; font-size: 12px; }
-  .summary-grid th, .summary-grid td { text-align: left; padding: 8px 6px; border-bottom: 1px solid rgba(148, 163, 184, 0.2); }
-  .summary-grid th { color: var(--text-muted); font-weight: 600; }
+  table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  th, td { text-align: left; padding: 8px 6px; border-bottom: 1px solid rgba(148,163,184,0.14); }
+  th { color: rgba(103,232,249,0.55); font-weight: 700; }
 
   .hidden { display: none; }
 
-  .header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 18px;
-    padding-bottom: 16px;
-    border-bottom: 1px solid rgba(148, 163, 184, 0.2);
-  }
-
-  .title {
-    font-size: 28px;
-    font-weight: 800;
-    color: var(--text-soft);
-    letter-spacing: 0.6px;
-  }
-
-  .subtitle {
-    color: var(--text-muted);
-    font-size: 14px;
-    font-family: 'Courier New', monospace;
-  }
-
+  /* Debug layout */
   .layout-grid {
     display: grid;
     grid-template-columns: 1.75fr 1fr;
-    gap: 24px;
-    margin-top: 24px;
+    gap: 14px;
+    margin-top: 14px;
     align-items: start;
   }
+  @media (max-width: 980px) { .layout-grid { grid-template-columns: 1fr; } }
 
-  .column { display: flex; flex-direction: column; gap: 20px; }
-
-  .card {
-    background: var(--panel-subtle);
-    border: 1px solid var(--panel-border);
-    border-radius: 18px;
-    padding: 18px;
-  }
-
-  .card.hero { padding: 24px; border-radius: 20px; }
-
-  .card h3 { color: var(--text-soft); margin-bottom: 10px; font-size: 16px; }
-  .helper-text { color: var(--text-muted); font-size: 12px; line-height: 1.55; }
-
-  .btn-row { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
+  .btn-row { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; }
 
   .btn {
     padding: 10px 16px;
     border-radius: 12px;
     border: none;
     cursor: pointer;
-    font-weight: 700;
+    font-weight: 900;
     text-transform: uppercase;
-    font-size: 12px;
-    letter-spacing: 0.4px;
+    font-size: 11px;
+    letter-spacing: 0.5px;
+    transition: 0.2s ease;
   }
-
-  .btn-primary { background: var(--primary); color: #0b1220; }
-  .btn-ghost { background: transparent; border: 1px solid rgba(148, 163, 184, 0.28); color: #e2e8f0; }
-
-  .btn-toggle {
-    background: rgba(15, 23, 42, 0.85);
-    color: #e2e8f0;
-    border: 1px solid rgba(148, 163, 184, 0.35);
-  }
-
-  .btn-toggle.active {
-    background: rgba(96, 165, 250, 0.18);
-    border-color: rgba(96, 165, 250, 0.5);
-    color: #e0f2fe;
-  }
+  .btn:hover { transform: translateY(-2px); }
+  .btn-primary { background: linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%); color: white; }
+  .btn-ghost { background: transparent; border: 1px solid rgba(6,182,212,0.3); color: var(--text); }
+  .btn-toggle { background: rgba(2,6,23,0.5); border: 1px solid rgba(6,182,212,0.25); color: var(--text); }
+  .btn-toggle.active { border-color: rgba(16,185,129,0.7); box-shadow: 0 0 12px rgba(16,185,129,0.18); }
 
   .level-pill {
     display: inline-flex;
@@ -217,18 +196,17 @@ disable_login_script: true
     gap: 6px;
     padding: 5px 10px;
     border-radius: 999px;
-    border: 1px solid rgba(148, 163, 184, 0.3);
-    background: rgba(15, 23, 42, 0.7);
+    border: 1px solid rgba(6,182,212,0.25);
+    background: rgba(2,6,23,0.35);
     font-size: 11px;
-    color: var(--text-muted);
+    color: rgba(103,232,249,0.55);
   }
-
-  .level-pill.active { border-color: rgba(34, 197, 94, 0.6); color: #bbf7d0; }
+  .level-pill.active { border-color: rgba(16,185,129,0.7); color: #bbf7d0; }
 
   .code-block {
-    background: #0c1428;
-    border: 1px solid rgba(96, 165, 250, 0.25);
-    border-radius: 12px;
+    background: rgba(2,6,23,0.55);
+    border: 1px solid rgba(6,182,212,0.25);
+    border-radius: 14px;
     padding: 14px;
     color: #e2e8f0;
     font-family: 'Courier New', monospace;
@@ -241,29 +219,29 @@ disable_login_script: true
   textarea {
     width: 100%;
     min-height: 140px;
-    background: #0c1428;
+    background: rgba(2, 6, 23, 0.7);
     color: #e2e8f0;
-    border: 1px solid rgba(96, 165, 250, 0.25);
-    border-radius: 12px;
+    border: 1px solid rgba(6,182,212,0.25);
+    border-radius: 14px;
     padding: 12px;
     font-family: 'Courier New', monospace;
     font-size: 12px;
+    outline: none;
   }
+  textarea:focus { border-color: rgba(6,182,212,0.85); box-shadow: 0 0 0 3px rgba(6,182,212,0.14); }
 
-  .status { margin-top: 10px; min-height: 18px; font-weight: 700; font-size: 12px; }
-  .status.ok { color: #22c55e; }
-  .status.err { color: var(--alert); }
+  .status { margin-top: 10px; min-height: 18px; font-weight: 900; font-size: 12px; }
+  .status.ok { color: var(--ok); }
+  .status.err { color: var(--bad); }
 
-  .locked { opacity: 0.5; pointer-events: none; }
-
-  .chat-panel { display: flex; flex-direction: column; gap: 10px; }
+  .locked { opacity: 0.55; pointer-events: none; }
 
   .chat-log {
     min-height: 200px;
     max-height: 300px;
     overflow-y: auto;
-    background: rgba(12, 20, 40, 0.7);
-    border: 1px solid var(--panel-border);
+    background: rgba(2,6,23,0.45);
+    border: 1px solid rgba(6,182,212,0.2);
     border-radius: 14px;
     padding: 14px;
     display: flex;
@@ -273,124 +251,132 @@ disable_login_script: true
   }
 
   .chat-bubble { padding: 8px 10px; border-radius: 12px; max-width: 90%; line-height: 1.45; }
-  .chat-user { background: rgba(96, 165, 250, 0.14); border: 1px solid rgba(96, 165, 250, 0.3); align-self: flex-end; color: #dbeafe; }
-  .chat-ai { background: rgba(148, 163, 184, 0.12); border: 1px solid rgba(148, 163, 184, 0.2); align-self: flex-start; color: #e2e8f0; white-space: pre-line; }
+  .chat-user { background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16,185,129,0.3); align-self: flex-end; color: #d1fae5; }
+  .chat-ai { background: rgba(59, 130, 246, 0.12); border: 1px solid rgba(59,130,246,0.25); align-self: flex-start; color: #e2e8f0; white-space: pre-line; }
 
-  .chat-input { display: flex; gap: 8px; }
+  .chat-input { display: flex; gap: 8px; margin-top: 10px; }
   .chat-input input {
     flex: 1;
-    background: #0c1428;
+    background: rgba(2,6,23,0.7);
     color: #e2e8f0;
-    border: 1px solid rgba(96, 165, 250, 0.25);
+    border: 1px solid rgba(6,182,212,0.25);
     border-radius: 12px;
     padding: 10px 12px;
     font-size: 12px;
+    outline: none;
   }
-
-  .role-badges { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0 10px; }
-  .role-badge { font-size: 11px; padding: 5px 9px; border-radius: 999px; border: 1px solid rgba(148, 163, 184, 0.35); background: rgba(30, 41, 59, 0.7); color: #e2e8f0; cursor: pointer; }
-  .role-badge.active { border-color: rgba(16, 185, 129, 0.6); box-shadow: 0 0 10px rgba(16, 185, 129, 0.3); background: rgba(16, 185, 129, 0.2); color: #d1fae5; }
-
-  @media (max-width: 980px) {
-    #endingPage { padding: 18px; }
-    .end-container { padding: 20px; }
-    .end-summary { padding: 20px; }
-    .title { font-size: 24px; }
-    .layout-grid { grid-template-columns: 1fr; }
-    textarea { min-height: 120px; }
-    .chat-log { min-height: 180px; max-height: 260px; }
-  }
+  .chat-input input:focus { border-color: rgba(6,182,212,0.85); box-shadow: 0 0 0 3px rgba(6,182,212,0.14); }
 </style>
 
-<div class="ending-fullbleed">
+<div class="stars" id="stars"></div>
+
+<div class="ending-root">
   <div id="endingPage">
-    <div class="end-summary">
-      <div class="summary-header">
-        <div>
-          <h1>Final Stop Summary</h1>
-          <p class="subtitle">Loading player progress from the backend…</p>
+    <!-- Summary Panel -->
+    <div class="panel">
+      <div class="title-section">
+        <div class="title-header">
+          <div style="font-size: 20px;">🏁</div>
+          <div class="title">Final Stop Summary</div>
         </div>
-        <div class="status-pill" id="liveStatus">Live</div>
+        <div class="subtitle">Loading player progress from the backend…</div>
       </div>
 
-      <div class="summary-grid">
-        <div class="card" id="summaryLoading">
-          <h2>Loading…</h2>
-          <p>Fetching player, badges, and score data.</p>
+      <div class="content">
+        <div style="display:flex; justify-content: space-between; align-items:center; gap: 12px; margin-bottom: 14px;">
+          <div style="color: rgba(103,232,249,0.65); font-family: 'Courier New', monospace; font-size: 12px;">
+            Protocol status // live sync
+          </div>
+          <div class="status-pill" id="liveStatus">Live</div>
         </div>
 
-        <div class="card hidden" id="summaryError">
-          <h2>Error</h2>
-          <p id="errorMessage">Unable to load data.</p>
-        </div>
+        <div class="summary-grid">
+          <div class="card" id="summaryLoading">
+            <h2>Loading</h2>
+            <div class="helper-text">Fetching player, badges, and score data.</div>
+          </div>
 
-        <div class="card hidden" id="playerCard">
-          <h2>Player</h2>
-          <div class="row"><span>Name:</span> <strong id="playerName">-</strong></div>
-          <div class="row"><span>ID:</span> <strong id="playerId">-</strong></div>
-          <div class="row"><span>Class:</span> <strong id="playerClass">-</strong></div>
-          <div class="row"><span>Joined:</span> <strong id="playerCreated">-</strong></div>
-        </div>
+          <div class="card hidden" id="summaryError">
+            <h2>Error</h2>
+            <div id="errorMessage">Unable to load data.</div>
+          </div>
 
-        <div class="card hidden" id="scoreCard">
-          <h2>Score Summary</h2>
-          <div class="row"><span>Total Score:</span> <strong id="totalScore">0</strong></div>
-          <div class="row"><span>Last Updated:</span> <strong id="scoreUpdated">-</strong></div>
-        </div>
+          <div class="card hidden" id="playerCard">
+            <h2>Player</h2>
+            <div class="row"><span>Name:</span> <strong id="playerName">-</strong></div>
+            <div class="row"><span>ID:</span> <strong id="playerId">-</strong></div>
+            <div class="row"><span>Class:</span> <strong id="playerClass">-</strong></div>
+            <div class="row"><span>Joined:</span> <strong id="playerCreated">-</strong></div>
+          </div>
 
-        <div class="card hidden" id="badgeCard">
-          <h2>Badges Earned (5 total)</h2>
-          <div class="badge-grid" id="badgeGrid"></div>
-        </div>
+          <div class="card hidden" id="scoreCard">
+            <h2>Score Summary</h2>
+            <div class="row"><span>Total Score:</span> <strong id="totalScore">0</strong></div>
+            <div class="row"><span>Last Updated:</span> <strong id="scoreUpdated">-</strong></div>
+          </div>
 
-        <div class="card hidden" id="attemptsCard">
-          <h2>Attempts & Completion</h2>
-          <table>
-            <thead>
-              <tr>
-                <th>Stop</th>
-                <th>Attempts</th>
-                <th>Score</th>
-                <th>Completed At</th>
-              </tr>
-            </thead>
-            <tbody id="attemptRows"></tbody>
-          </table>
+          <div class="card hidden" id="badgeCard">
+            <h2>Badges Earned</h2>
+            <div class="badge-grid" id="badgeGrid"></div>
+          </div>
+
+          <div class="card hidden" id="attemptsCard">
+            <h2>Attempts & Completion</h2>
+            <table>
+              <thead>
+                <tr>
+                  <th>Stop</th>
+                  <th>Attempts</th>
+                  <th>Score</th>
+                  <th>Completed At</th>
+                </tr>
+              </thead>
+              <tbody id="attemptRows"></tbody>
+            </table>
+          </div>
         </div>
       </div>
     </div>
 
-    <div class="end-container">
-      <div class="header">
-        <div>
-          <div class="title">Maze - Ending Page</div>
-          <div class="subtitle">Action-Based Challenges + Debug Track</div>
+    <!-- Debug Panel -->
+    <div class="panel">
+      <div class="title-section">
+        <div class="title-header">
+          <div style="font-size: 20px;">🛠️</div>
+          <div class="title">Debug Track</div>
         </div>
+        <div class="subtitle">Action-Based Challenges + Hint Coach</div>
       </div>
 
-      <div class="layout-grid">
-        <div class="column">
+      <div class="content">
+        <div class="layout-grid">
           <div class="card">
-            <h3>Choose Your Debug Level</h3>
+            <h2>Choose Your Debug Level</h2>
             <div class="btn-row" id="debugLevelButtons">
               <button type="button" class="btn btn-toggle" data-level="beginner">🟢 Beginner</button>
               <button type="button" class="btn btn-toggle" data-level="intermediate">🟡 Intermediate</button>
               <button type="button" class="btn btn-toggle" data-level="hard">🔴 Hard</button>
               <button type="button" class="btn btn-primary" id="startDebug">Start Challenge</button>
             </div>
-            <div style="margin-top: 12px; display: flex; gap: 10px; flex-wrap: wrap;">
+            <div style="margin-top: 10px; display: flex; gap: 10px; flex-wrap: wrap;">
               <span class="level-pill" id="levelStatus">Level: not selected</span>
               <span class="level-pill" id="badgeStatus">Badges: none</span>
             </div>
-          </div>
 
-          <div class="card hero" id="debugChallengeCard">
-            <h3>Debug the Code (Your Level)</h3>
-            <div class="helper-text" id="debugProblemTitle">Select a level, then click Start Challenge to load your problem.</div>
-            <pre class="code-block" id="debugCode">No problem loaded yet.</pre>
-            <div class="helper-text" id="debugPrompt"></div>
-            <div class="helper-text">Paste corrected code only. Sentences will be rejected.</div>
-            <div>
+            <div style="margin-top: 14px;">
+              <div style="color: rgba(103,232,249,0.65); font-family: 'Courier New', monospace; font-size: 12px; margin-bottom: 8px;">
+                Debug the Code (Your Level)
+              </div>
+              <div id="debugProblemTitle" style="color: rgba(226,232,240,0.9); font-size: 12px; line-height: 1.55;">
+                Select a level, then click Start Challenge to load your problem.
+              </div>
+
+              <pre class="code-block" id="debugCode">No problem loaded yet.</pre>
+              <div id="debugPrompt" style="color: rgba(103,232,249,0.65); font-size: 12px; margin-bottom: 8px;"></div>
+              <div style="color: rgba(226,232,240,0.75); font-size: 12px; margin-bottom: 8px;">
+                Paste corrected code only. Sentences will be rejected.
+              </div>
+
               <textarea id="debugAnswer" placeholder="Paste corrected code here..."></textarea>
               <div class="btn-row">
                 <button class="btn btn-primary" id="submitDebug">Submit Fix</button>
@@ -399,28 +385,28 @@ disable_login_script: true
               <div class="status" id="debugStatus"></div>
             </div>
           </div>
-        </div>
 
-        <div class="column">
           <div class="card">
-            <h3>💬 Hint Coach Chatbot</h3>
-            <p class="helper-text">ChatBot provides 3 short hints first, then reveals the answer. If you paste code, it can run it in a sandbox and report output.</p>
-            <p class="helper-text">Guardrail: The answer is revealed only after 3 hints.</p>
-            <div class="chat-panel">
-              <div class="chat-log" id="chatLog">
-                <div class="chat-bubble chat-ai">ChatBot: Tell me the level and what you think the bug is.</div>
-              </div>
-              <div class="chat-input">
-                <input id="chatInput" type="text" placeholder="Ask for help (e.g., 'Where is the bug?')" />
-                <button class="btn btn-primary" id="sendChat">Send</button>
-              </div>
+            <h2>Hint Coach Chatbot</h2>
+            <div style="color: rgba(226,232,240,0.85); font-size: 12px; line-height: 1.55;">
+              ChatBot provides 3 short hints first, then reveals the answer. If you paste code, it can run it in a sandbox and report output.
             </div>
-          </div>
+            <div style="color: rgba(103,232,249,0.65); font-size: 12px; margin-top: 6px;">
+              Guardrail: The answer is revealed only after 3 hints.
+            </div>
 
-          <div class="card">
-            <h3>Action-Based Learning Focus</h3>
-            <p class="helper-text">Algorithms process actions in order, loop per action, use decisions, update results, and output the final result.</p>
-            <p class="helper-text">Use the debug panel to validate each step and earn badges as you go.</p>
+            <div class="chat-log" id="chatLog" style="margin-top: 10px;">
+              <div class="chat-bubble chat-ai">ChatBot: Tell me the level and what you think the bug is.</div>
+            </div>
+
+            <div class="chat-input">
+              <input id="chatInput" type="text" placeholder="Ask for help (e.g., 'Where is the bug?')" />
+              <button class="btn btn-primary" id="sendChat">Send</button>
+            </div>
+
+            <div style="margin-top: 14px; color: rgba(226,232,240,0.8); font-size: 12px; line-height: 1.55;">
+              Algorithms process actions in order, loop per action, use decisions, update results, and output the final result.
+            </div>
           </div>
         </div>
       </div>
@@ -431,12 +417,25 @@ disable_login_script: true
 <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
 
 <script>
+  // Stars background (match homescreen)
+  const starsContainer = document.getElementById('stars');
+  for (let i = 0; i < 160; i++) {
+    const star = document.createElement('div');
+    star.className = 'star';
+    star.style.left = Math.random() * 100 + '%';
+    star.style.top = Math.random() * 100 + '%';
+    star.style.animationDelay = Math.random() * 3 + 's';
+    star.style.opacity = Math.random() * 0.7 + 0.25;
+    starsContainer.appendChild(star);
+  }
+</script>
+
+<script>
   (function () {
     var params = new URLSearchParams(window.location.search);
     var apiPort = params.get('apiPort') || '3000';
     var API_BASE = window.location.protocol + '//' + window.location.hostname + ':' + apiPort;
 
-    // ✅ support both ?useBackend=true and ?usebackend=true
     var useBackend = (params.get('useBackend') || params.get('usebackend')) === 'true';
 
     var playerId =
@@ -619,7 +618,6 @@ disable_login_script: true
     var debugAnswer = byId('debugAnswer');
     var submitDebug = byId('submitDebug');
     var clearDebug = byId('clearDebug');
-    var debugChallengeCard = byId('debugChallengeCard');
     var chatLog = byId('chatLog');
     var chatInput = byId('chatInput');
     var sendChat = byId('sendChat');
@@ -639,7 +637,6 @@ disable_login_script: true
           title: 'Beginner #1: Missing Colon',
           code: "def greet(name)\n    print('Hello ' + name)\n\ngreet('Ada')",
           prompt: 'Fix the syntax error and paste the corrected code.',
-          expectedKeywords: ['colon', 'syntax', 'print', 'greet'],
           expectedOutput: "Hello Ada",
           hints: [
             'Look at the function definition line for missing syntax.',
@@ -655,7 +652,6 @@ disable_login_script: true
           title: 'Intermediate #1: Off-by-One Loop',
           code: "nums = [2, 4, 6, 8]\nfor i in range(0, len(nums)):\n    print(nums[i])\nprint('done')",
           prompt: 'The loop should skip the first item and print only 4, 6, 8. Paste corrected code.',
-          expectedKeywords: ['range', 'start', 'index', 'loop', 'skip'],
           expectedOutput: "4\n6\n8\ndone",
           hints: [
             'The loop currently starts at index 0.',
@@ -671,12 +667,11 @@ disable_login_script: true
           title: 'Hard #1: Guard the Empty List',
           code: "def average(scores):\n    total = 0\n    for s in scores:\n        total += s\n    return total / len(scores)\n\nprint(average([]))",
           prompt: 'Handle the empty-list edge case and paste corrected code.',
-          expectedKeywords: ['empty', 'len', 'zero', 'edge', 'return'],
           expectedOutput: "0",
           hints: [
             'Division by zero happens when the list is empty.',
             'Check len(scores) before dividing.',
-            'Return 0 or None for the empty case.'
+            'Return 0 for the empty case.'
           ],
           answer: "def average(scores):\n    if not scores:\n        return 0\n    total = 0\n    for s in scores:\n        total += s\n    return total / len(scores)\n\nprint(average([]))"
         }
@@ -713,10 +708,6 @@ disable_login_script: true
     }
 
     function setDebugLockState(locked) {
-      if (debugChallengeCard) {
-        if (locked) debugChallengeCard.classList.add('locked');
-        else debugChallengeCard.classList.remove('locked');
-      }
       if (debugAnswer) debugAnswer.disabled = locked;
       if (submitDebug) submitDebug.disabled = locked;
       if (clearDebug) clearDebug.disabled = locked;
