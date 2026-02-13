@@ -294,8 +294,13 @@ disable_login_script: true
   <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
   <script>
     (function () {
-      var API_BASE = window.location.protocol + '//' + window.location.hostname + ':3000';
       var params = new URLSearchParams(window.location.search);
+      // Allow override via URL parameter, otherwise defaults to port 3000
+      var apiPort = params.get('apiPort') || '3000';
+      var API_BASE = window.location.protocol + '//' + window.location.hostname + ':' + apiPort;
+      // Make backend optional - only use if explicitly enabled
+      var useBackend = params.get('useBackend') === 'true' || false;
+      
       var playerId = localStorage.getItem('learninggame_player_id') || localStorage.getItem('player_id') || params.get('playerId') || params.get('id');
       if (playerId) {
         try { localStorage.setItem('learninggame_player_id', playerId); } catch (e) { }
@@ -398,6 +403,11 @@ disable_login_script: true
       }
 
       function loadAll() {
+        if (!useBackend) {
+          setLoading(false);
+          setError('Backend is disabled. Add ?useBackend=true to URL to enable.');
+          return;
+        }
         if (!playerId) {
           setLoading(false);
           setError('Missing player id. Start the game to generate one.');
@@ -417,7 +427,7 @@ disable_login_script: true
             showCards();
           })
           .catch(function (err) {
-            setError('Failed to load player data from backend. ' + (err && err.message ? err.message : ''));
+            setError('Failed to load player data. Ensure backend is running on ' + API_BASE);
           })
           .finally(function () {
             setLoading(false);
@@ -425,8 +435,16 @@ disable_login_script: true
       }
 
       function setupLiveUpdates() {
+        if (!useBackend) {
+          liveStatus.textContent = 'Offline';
+          return;
+        }
         try {
-          var socket = io(API_BASE, { transports: ['websocket'] });
+          var socket = io(API_BASE, { 
+            transports: ['websocket'],
+            reconnection: false,
+            timeout: 5000
+          });
           socket.on('connect', function () {
             liveStatus.textContent = 'Live';
           });
@@ -436,6 +454,9 @@ disable_login_script: true
           socket.on('disconnect', function () {
             liveStatus.textContent = 'Offline';
           });
+          socket.on('connect_error', function () {
+            liveStatus.textContent = 'Offline';
+          });
         } catch (e) {
           liveStatus.textContent = 'Offline';
         }
@@ -443,7 +464,9 @@ disable_login_script: true
 
       loadAll();
       setupLiveUpdates();
-      setInterval(loadAll, 15000);
+      if (useBackend) {
+        setInterval(loadAll, 15000);
+      }
     })();
   </script>
 
