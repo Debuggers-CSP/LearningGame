@@ -489,6 +489,33 @@ permalink: /learninggame/home
   .hint-content-wrapper::-webkit-scrollbar-thumb { background: rgba(59, 130, 246, 0.5); border-radius: 3px; }
   .chat-messages::-webkit-scrollbar-thumb:hover,
   .hint-content-wrapper::-webkit-scrollbar-thumb:hover { background: rgba(59, 130, 246, 0.7); }
+
+  /* =========================================================
+     ✅ CENTER FIX (ADDED) — does NOT delete anything
+     This centers the progress section + maze section together.
+     Put at the end so it overrides earlier margins.
+     ========================================================= */
+  .scroll-area{
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .progress-bar-container,
+  .maze-container{
+    width: 100%;
+    max-width: 820px;           /* align with maze max-width */
+    margin-inline: auto !important;
+  }
+
+  .progress-bar-container{
+    margin: 10px 0 0 0 !important; /* removes the left/right offset */
+  }
+
+  .maze{
+    margin: 0 auto !important;
+  }
 </style>
 
 <div class="stars" id="stars"></div>
