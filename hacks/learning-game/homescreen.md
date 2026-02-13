@@ -9,19 +9,61 @@ permalink: /learninggame/home
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
 
-  /* FIX: page can scroll if needed, but main scrolling still happens INSIDE the app */
+  /* =========================================================
+     ✅ CENTER FIX (IMPORTANT)
+     Your site layout/top nav is likely wrapping this page in
+     its own container, so BODY flex-centering won’t behave
+     the way you expect. We center using a dedicated wrapper
+     (.learninggame-root) and also add higher-specificity rules
+     so your .container styles win even if site CSS loads later.
+     ========================================================= */
+
+  /* Stop relying on body flex to center (site layout can interfere) */
   body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     background: linear-gradient(135deg, #020617 0%, #0f172a 50%, #1e1b4b 100%);
     min-height: 100vh;
     width: 100%;
-    display: flex;
-    justify-content: center;
-    align-items: flex-start;      /* FIX: prevents top clipping */
-    overflow-x: hidden;           /* allow vertical scroll if viewport is tiny */
+    overflow-x: hidden;
     overflow-y: auto;
     position: relative;
     padding: 24px;
+
+    /* override any theme/layout body flex rules */
+    display: block !important;
+  }
+
+  /* Center the whole app area no matter what the theme does */
+  .learninggame-root{
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding-top: 0; /* body already has padding */
+  }
+
+  /* Ensure your app container is centered and not affected by theme ".container" rules */
+  .learninggame-root > .container{
+    margin-left: auto !important;
+    margin-right: auto !important;
+  }
+
+  /* Also force width rules to win if theme overwrites .container later */
+  .learninggame-root .container {
+    position: relative;
+    width: min(900px, 95vw) !important;
+    height: min(860px, calc(100vh - 48px)) !important;
+    min-height: 740px !important;
+    max-height: calc(100vh - 48px) !important;
+    background: rgba(15, 23, 42, 0.85) !important;
+    backdrop-filter: blur(20px);
+    border-radius: 24px !important;
+    border: 2px solid rgba(6,182,212,0.4) !important;
+    box-shadow: 0 0 60px rgba(6,182,212,0.25);
+    overflow: hidden;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
   }
 
   .stars { position: fixed; inset: 0; overflow: hidden; z-index: 0; pointer-events: none; }
@@ -45,25 +87,6 @@ permalink: /learninggame/home
     pointer-events: none;
   }
 
-  /* App container: fixed viewport-ish size, internal scrolling */
-  .container {
-    position: relative;
-    width: min(900px, 95vw);
-    height: min(860px, calc(100vh - 48px));   /* app fits viewport */
-    min-height: 740px;
-    max-height: calc(100vh - 48px);
-    background: rgba(15, 23, 42, 0.85);
-    backdrop-filter: blur(20px);
-    border-radius: 24px;
-    border: 2px solid rgba(6,182,212,0.4);
-    box-shadow: 0 0 60px rgba(6,182,212,0.25);
-    overflow: hidden; /* internal scroll lives in .scroll-area */
-    z-index: 1;
-    display: flex;
-    flex-direction: column;
-    margin: 0 auto;
-  }
-
   .title-section {
     width: 100%;
     background: rgba(15,23,42,0.95);
@@ -82,7 +105,7 @@ permalink: /learninggame/home
     overflow-y: auto;
     overflow-x: hidden;
     padding-bottom: 18px;
-    min-height: 0; /* critical for flex children scrolling */
+    min-height: 0;
   }
   .scroll-area::-webkit-scrollbar { width: 7px; }
   .scroll-area::-webkit-scrollbar-track { background: rgba(30, 41, 59, 0.25); border-radius: 6px; }
@@ -263,7 +286,6 @@ permalink: /learninggame/home
     font-family: 'Courier New', monospace;
   }
 
-  /* Modal: fixed so it covers the app even if user scrolled inside */
   .question-modal {
     display: none;
     position: fixed;
@@ -490,11 +512,7 @@ permalink: /learninggame/home
   .chat-messages::-webkit-scrollbar-thumb:hover,
   .hint-content-wrapper::-webkit-scrollbar-thumb:hover { background: rgba(59, 130, 246, 0.7); }
 
-  /* =========================================================
-     ✅ CENTER FIX (ADDED) — does NOT delete anything
-     This centers the progress section + maze section together.
-     Put at the end so it overrides earlier margins.
-     ========================================================= */
+  /* Keep your internal centering inside the app */
   .scroll-area{
     display: flex;
     flex-direction: column;
@@ -505,12 +523,12 @@ permalink: /learninggame/home
   .progress-bar-container,
   .maze-container{
     width: 100%;
-    max-width: 820px;           /* align with maze max-width */
+    max-width: 820px;
     margin-inline: auto !important;
   }
 
   .progress-bar-container{
-    margin: 10px 0 0 0 !important; /* removes the left/right offset */
+    margin: 10px 0 0 0 !important;
   }
 
   .maze{
@@ -529,56 +547,59 @@ permalink: /learninggame/home
   <button class="btn btn-blue" id="claimBadgeBtn" style="width: 100%;">Claim Badge</button>
 </div>
 
-<div class="container">
-  <div class="title-section">
-    <div class="title-header">
-      <div class="title-icon">🚀</div>
-      <div class="title">Station Navigation</div>
-    </div>
-    <div class="subtitle">Cadet Training Protocol // AI Assistant Enabled</div>
-  </div>
-
-  <!-- EVERYTHING BELOW SCROLLS INSIDE THE APP -->
-  <div class="scroll-area">
-    <div class="progress-bar-container">
-      <div class="progress-header">STATION_INTEGRITY_MAP</div>
-
-      <div class="progress-main">
-        <div class="progress-percentage" id="progressPercentage">0%</div>
-        <div class="progress-status" id="progressStatus">PROTOCOL_SYNCED</div>
+<!-- ✅ NEW WRAPPER: centers the whole app on your site layout -->
+<div class="learninggame-root">
+  <div class="container">
+    <div class="title-section">
+      <div class="title-header">
+        <div class="title-icon">🚀</div>
+        <div class="title">Station Navigation</div>
       </div>
-
-      <div class="progress-boxes" id="progressBoxes">
-        <div class="progress-box"></div><div class="progress-box"></div><div class="progress-box"></div>
-        <div class="progress-box"></div><div class="progress-box"></div><div class="progress-box"></div>
-        <div class="progress-box"></div><div class="progress-box"></div><div class="progress-box"></div>
-        <div class="progress-box"></div><div class="progress-box"></div><div class="progress-box"></div>
-        <div class="progress-box"></div><div class="progress-box"></div><div class="progress-box"></div>
-      </div>
-
-      <div class="badge-shelf" id="badgeShelf">
-        <span style="color: rgba(103,232,249,0.3); font-size: 9px; letter-spacing: 1px;">EARNED_BADGES: [EMPTY]</span>
-      </div>
-
-      <div class="progress-stats">
-        <div class="stat-item">
-          <span class="stat-value" id="statSectors">0/5</span>
-          <span class="stat-label">SECTORS</span>
-        </div>
-        <div class="stat-item">
-          <span class="stat-value" id="statLocked">5</span>
-          <span class="stat-label">LOCKED</span>
-        </div>
-        <div class="stat-item">
-          <span class="stat-value" id="statConnected">CONNECTED</span>
-          <span class="stat-label">DATABASE</span>
-        </div>
-      </div>
+      <div class="subtitle">Cadet Training Protocol // AI Assistant Enabled</div>
     </div>
 
-    <div class="maze-container">
-      <div class="maze" id="maze"></div>
-      <div class="controls-hint">Use arrow keys to navigate • Click 🤖 for AI help</div>
+    <!-- EVERYTHING BELOW SCROLLS INSIDE THE APP -->
+    <div class="scroll-area">
+      <div class="progress-bar-container">
+        <div class="progress-header">STATION_INTEGRITY_MAP</div>
+
+        <div class="progress-main">
+          <div class="progress-percentage" id="progressPercentage">0%</div>
+          <div class="progress-status" id="progressStatus">PROTOCOL_SYNCED</div>
+        </div>
+
+        <div class="progress-boxes" id="progressBoxes">
+          <div class="progress-box"></div><div class="progress-box"></div><div class="progress-box"></div>
+          <div class="progress-box"></div><div class="progress-box"></div><div class="progress-box"></div>
+          <div class="progress-box"></div><div class="progress-box"></div><div class="progress-box"></div>
+          <div class="progress-box"></div><div class="progress-box"></div><div class="progress-box"></div>
+          <div class="progress-box"></div><div class="progress-box"></div><div class="progress-box"></div>
+        </div>
+
+        <div class="badge-shelf" id="badgeShelf">
+          <span style="color: rgba(103,232,249,0.3); font-size: 9px; letter-spacing: 1px;">EARNED_BADGES: [EMPTY]</span>
+        </div>
+
+        <div class="progress-stats">
+          <div class="stat-item">
+            <span class="stat-value" id="statSectors">0/5</span>
+            <span class="stat-label">SECTORS</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-value" id="statLocked">5</span>
+            <span class="stat-label">LOCKED</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-value" id="statConnected">CONNECTED</span>
+            <span class="stat-label">DATABASE</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="maze-container">
+        <div class="maze" id="maze"></div>
+        <div class="controls-hint">Use arrow keys to navigate • Click 🤖 for AI help</div>
+      </div>
     </div>
   </div>
 </div>
@@ -1338,7 +1359,7 @@ ${err.message}
     out.push("// Exported from pseudocode (display-only)");
     out.push("// Not executed. Used for checking structure.\n");
     out.push("function solution() {");
-    for (let line of lines) out.push(`  // ${line}`);
+    for (let line of lines) out.push(\`  // \${line}\`);
     out.push("}\n");
     out.push("solution();");
     return out.join("\n");
