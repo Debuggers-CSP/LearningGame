@@ -30,6 +30,31 @@ permalink: /learninggame/home
     display: block !important;
   }
 
+  .logout-fixed-btn {
+    position: fixed;
+    bottom: 20px;
+    left: 20px;
+    z-index: 1000;
+    padding: 10px 18px;
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.4);
+    color: #ef4444;
+    border-radius: 10px;
+    font-weight: 800;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    cursor: pointer;
+    backdrop-filter: blur(10px);
+    transition: all 0.3s ease;
+  }
+  .logout-fixed-btn:hover {
+    background: #ef4444;
+    color: white;
+    box-shadow: 0 0 20px rgba(239, 68, 68, 0.4);
+    transform: translateY(-2px);
+  }
+
   /* Background layers: keep them BEHIND the app no matter what */
   .stars { position: fixed; inset: 0; overflow: hidden; z-index: 0; pointer-events: none; }
   .star { position: absolute; width: 2px; height: 2px; background: white; border-radius: 50%; animation: twinkle 3s infinite; }
@@ -539,6 +564,7 @@ permalink: /learninggame/home
 </style>
 
 <div class="stars" id="stars"></div>
+<button class="logout-fixed-btn" id="logoutBtn">Logout</button>
 
 <div id="badgeAwardModal" class="badge-award-modal">
   <h2 id="badgeAwardTitle">MODULE MASTER!</h2>
@@ -827,12 +853,13 @@ permalink: /learninggame/home
     document.getElementById('badgeAwardName').textContent = `Sector ${s} Module Completed Successfully.`;
     badgeModal.style.display = 'block';
 
-    claimBtn.onclick = () => {
+    claimBtn.onclick = async () => {
       badgesEarned.push(id);
       badgeModal.style.display = 'none';
+      await updateBackendBadges(id, s, m);
       animateBadgeToShelf(badgeIcons[m]);
       updateBadgeUI();
-      updateBackendBadges(id, s, m);
+      
     };
   }
 
@@ -857,8 +884,16 @@ permalink: /learninggame/home
   }
 
   async function updateBackendBadges(id, s, m) {
-    try {
-      await fetchJSON(`${robopURI}/api/robop/assign_badge`, {
+
+      const session = JSON.parse(localStorage.getItem("userSession") || "{}");
+      const userId = session.id; // This is the 'id' from the data.user object saved during login
+
+      if (!userId) {
+          console.warn("No user ID found in session.");
+          return;
+      }
+    try { 
+      await fetchJSON(`${robopURI}/api/robop/assign_badge?user_id=${userId}`, {
         method: "POST",
         body: JSON.stringify({
           badge_name: id,
@@ -875,7 +910,16 @@ permalink: /learninggame/home
 
   async function updateBadgeUI() {
     try {
-      const badges = await fetchJSON(`${robopURI}/api/robop/fetch_badges`, { method: "GET" });
+       // 1. Get the user object from local storage
+      const session = JSON.parse(localStorage.getItem("userSession") || "{}");
+      const userId = session.id; // This is the 'id' from the data.user object saved during login
+
+      if (!userId) {
+          console.warn("No user ID found in session.");
+          return;
+      }
+      // The ?t=${Date.now()} makes the URL unique every single time
+      const badges = await fetchJSON(`${robopURI}/api/robop/fetch_badges?user_id=${userId}`, { method: "GET" });
 
       badgeShelf.innerHTML = '';
 
@@ -1204,6 +1248,8 @@ permalink: /learninggame/home
     const level = robotLevels[currentSectorNum];
     let rPos = [...level.start];
     let dir = 0;
+
+    updateRobotGrid(rPos, dir); 
     const commands = [];
     const robot = {
       MoveForward: (n=1) => { for (let i=0; i<n; i++) commands.push('MOVE'); },
@@ -1245,6 +1291,7 @@ permalink: /learninggame/home
       } else {
         feedback.style.color = "#fbbf24";
         feedback.textContent = "⚠️ Short of target. Try again.";
+        updateRobotGrid(level.start,0); 
       }
     } catch (e) {
       feedback.style.color = "#ef4444";
@@ -1450,6 +1497,7 @@ ${err.message}
           feedback.textContent="✅ Correct!";
           backBtn.disabled=false;
           backBtn.style.opacity="1";
+          usedAutofill=false;
           awardBadge(currentSectorNum, 2);
         } else {
           feedback.style.color="#ef4444";
@@ -1613,6 +1661,7 @@ ${err.message}
 
   document.addEventListener('keydown', e => {
     if (e.key === 'S' && e.shiftKey && modal.classList.contains('active')) {
+      usedAutofill = true;
       awardBadge(currentSectorNum, currentQuestion);
       nextBtn.disabled = false;
       nextBtn.style.opacity = "1";
@@ -1649,6 +1698,24 @@ ${err.message}
     if (!document.hidden) requestAnimationFrame(hardRefreshUI);
   });
 
+  // 2. Fixed Logout Function
+  async function handleLogout() {
+    try {
+      await fetch(`${API_URL}/logout`, {
+        ...fetchOptions,
+        method: "POST",
+        headers: { "Content-Type": "application/json" }
+      });
+    } catch (e) {
+      console.warn("Backend logout failed, clearing locally:", e);
+    }
+   
+    // Always clear local session and redirect
+    localStorage.removeItem("userSession");
+    window.location.href = '{{ site.baseurl }}/learninggame/login';
+  }
+
+  document.getElementById('logoutBtn').onclick = handleLogout;
   loadProgress();
   drawMaze();
   updateProgressBar();
