@@ -548,7 +548,7 @@ permalink: /learninggame/home
 
   /* Keep your internal centering inside the app */
   .progress-bar-container,
-  .maze-container{
+  .maze-container{  
     width: 100%;
     max-width: 820px;
     margin-inline: auto !important;
@@ -710,18 +710,18 @@ permalink: /learninggame/home
 
 <script type="module">
   // Config import safe fallback
-  let getRobopURI, fetchOptions;
+  let pythonURI, fetchOptions;
   try {
     const mod = await import('{{ "/assets/js/api/config.js" | relative_url }}?v=20260211_1');
-    getRobopURI = mod.getRobopURI;
+    pythonURI = mod.pythonURI;
     fetchOptions = mod.fetchOptions;
   } catch (e) {
     console.warn("config.js import failed (fallback active):", e);
-    getRobopURI = async () => "";
+    pythonURI = async () => "";
     fetchOptions = {};
   }
 
-  const robopURI = (await getRobopURI()) || "";
+  const robopURI = (pythonURI) || "";
 
   const AUTH = {
     ...fetchOptions,
@@ -893,8 +893,10 @@ permalink: /learninggame/home
           return;
       }
     try { 
-      await fetchJSON(`${robopURI}/api/robop/assign_badge?user_id=${userId}`, {
+      await fetchJSON(`${robopURI}/api/robop/assign_badge`, {
         method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           badge_name: id,
           sector_id: s,
@@ -919,7 +921,11 @@ permalink: /learninggame/home
           return;
       }
       // The ?t=${Date.now()} makes the URL unique every single time
-      const badges = await fetchJSON(`${robopURI}/api/robop/fetch_badges?user_id=${userId}`, { method: "GET" });
+      // ✅ no user_id query param anymore
+      const badges = await fetchJSON(`${robopURI}/api/robop/fetch_badges`, {
+        method: "GET",
+        credentials: "include"   // IMPORTANT so cookie is sent
+      });
 
       badgeShelf.innerHTML = '';
 

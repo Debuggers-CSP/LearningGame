@@ -737,11 +737,11 @@ Keep it conversational, positive, and concise (3-4 sentences total). Be specific
 
 <script type="module">
   import { javaURI as spiderJavaURI, fetchOptions as spiderFetchOptions } from '{{ site.baseurl }}/assets/js/api/config.js';
-  import { pythonURI as spiderPythonURI } from '{{ site.baseurl }}/assets/js/api/config.js';
+  import { pythonURI as spiderpythonURI } from '{{ site.baseurl }}/assets/js/api/config.js';
 
   async function spiderGetCredentialsForRadar() {
         try {
-            const spiderRes = await fetch(`${spiderPythonURI}/api/id`, {
+            const spiderRes = await fetch(`${spiderpythonURI}/api/id`, {
                 ...spiderFetchOptions,
                 method: "GET",
                 headers: {
