@@ -1552,6 +1552,7 @@ ${err.message}
 
         let answer = null;
 
+        // 1) Try AI autofill (NOW FIXED on backend to accept POST)
         try {
           const ai = await fetchJSON(`${window.PSEUDOCODE_BANK_URL}/ai_autofill`, {
             method: "POST",
@@ -1560,9 +1561,11 @@ ${err.message}
           if (ai && ai.success && ai.answer) answer = ai.answer;
         } catch (e) { answer = null; }
 
+        // 2) Fallback: use robop_api /autofill (this exists)
+        // ✅ FIX: previously called a non-existent /api/pseudocode_bank/autofill
         if (!answer) {
           try {
-            const plain = await fetchJSON(`${window.PSEUDOCODE_BANK_URL}/autofill`, {
+            const plain = await fetchJSON(`${window.API_URL}/autofill`, {
               method: "POST",
               body: JSON.stringify(payload)
             });
@@ -1570,6 +1573,7 @@ ${err.message}
           } catch (e) { answer = null; }
         }
 
+        // 3) Last resort: still try robop /autofill again with same payload (kept)
         if (!answer) {
           const fb = await fetchJSON(`${window.API_URL}/autofill`, {
             method: "POST",
