@@ -1319,7 +1319,6 @@ permalink: /learninggame/home
   // ✅ PSEUDOCODE RANDOMIZER FIX
   // ============================
   async function fetchRandomPseudocodeQuestion(levelNum) {
-    // Cache-buster + "exclude last question" so it feels actually random to the user
     const t = Date.now();
 
     const lastQid = Number(localStorage.getItem("last_pseudo_qid") || "0");
@@ -1336,7 +1335,6 @@ permalink: /learninggame/home
       }
     );
 
-    // Save last question id so the next fetch can exclude it
     if (data && data.question_id != null) {
       localStorage.setItem("last_pseudo_qid", String(data.question_id));
     }
@@ -1570,7 +1568,7 @@ ${err.message}
 
         let answer = null;
 
-        // 1) Try AI autofill (NOW FIXED on backend to accept POST)
+        // 1) Try AI autofill (backend should accept POST)
         try {
           const ai = await fetchJSON(`${window.PSEUDOCODE_BANK_URL}/ai_autofill`, {
             method: "POST",
@@ -1579,8 +1577,7 @@ ${err.message}
           if (ai && ai.success && ai.answer) answer = ai.answer;
         } catch (e) { answer = null; }
 
-        // 2) Fallback: use robop_api /autofill (this exists)
-        // ✅ FIX: previously called a non-existent /api/pseudocode_bank/autofill
+        // 2) Fallback: use robop_api /autofill
         if (!answer) {
           try {
             const plain = await fetchJSON(`${window.API_URL}/autofill`, {
@@ -1591,7 +1588,7 @@ ${err.message}
           } catch (e) { answer = null; }
         }
 
-        // 3) Last resort: still try robop /autofill again with same payload (kept)
+        // 3) Last resort: try again
         if (!answer) {
           const fb = await fetchJSON(`${window.API_URL}/autofill`, {
             method: "POST",
@@ -1723,7 +1720,9 @@ ${err.message}
       await fetch(`${API_URL}/logout`, {
         ...fetchOptions,
         method: "POST",
-        headers: { "Content-Type": "application/json" }
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        mode: "cors",
       });
     } catch (e) {
       console.warn("Backend logout failed, clearing locally:", e);
