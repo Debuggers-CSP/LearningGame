@@ -1319,11 +1319,29 @@ permalink: /learninggame/home
   // ✅ PSEUDOCODE RANDOMIZER FIX
   // ============================
   async function fetchRandomPseudocodeQuestion(levelNum) {
-    const t = Date.now(); // cache-buster
-    return await fetchJSON(
-      `${window.PSEUDOCODE_BANK_URL}/random?level=${encodeURIComponent(levelNum)}&t=${t}`,
-      { method: "GET", cache: "no-store" }
+    // Cache-buster + "exclude last question" so it feels actually random to the user
+    const t = Date.now();
+
+    const lastQid = Number(localStorage.getItem("last_pseudo_qid") || "0");
+    const exclude = lastQid > 0 ? `&exclude_id=${encodeURIComponent(lastQid)}` : "";
+
+    const data = await fetchJSON(
+      `${window.PSEUDOCODE_BANK_URL}/random?level=${encodeURIComponent(levelNum)}${exclude}&t=${t}`,
+      {
+        method: "GET",
+        cache: "no-store",
+        headers: {
+          "Cache-Control": "no-store"
+        }
+      }
     );
+
+    // Save last question id so the next fetch can exclude it
+    if (data && data.question_id != null) {
+      localStorage.setItem("last_pseudo_qid", String(data.question_id));
+    }
+
+    return data;
   }
 
   async function renderPseudoCode() {
