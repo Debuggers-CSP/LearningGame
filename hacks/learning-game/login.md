@@ -432,9 +432,9 @@ comments: True
 </div>
 
 <script type="module">
-  import { getRobopURI, fetchOptions } from '{{ site.baseurl }}/assets/js/api/config.js?v=20260123_1';
+  import { pythonURI, fetchOptions } from '{{ site.baseurl }}/assets/js/api/config.js?v=20260123_1';
 
-  const robopURI = await getRobopURI();
+  const robopURI = pythonURI;
   const API_URL = `${robopURI}/api/robop`;
 
   console.log("Using robopURI:", robopURI);
@@ -570,7 +570,7 @@ async function handleRegister(event) {
 
 
   // --- RPG LOGIN ---
-  async function handleLogin(event) {
+ async function handleLogin(event) {
   event.preventDefault();
   hideMessage();
   showLoading();
@@ -586,18 +586,21 @@ async function handleRegister(event) {
       body: JSON.stringify({ GitHubID: githubId, Password: password }),
     });
 
+    const text = await response.text();
+    let data = {};
+    try { data = text ? JSON.parse(text) : {}; } catch { data = {}; }
 
-    const data = await response.json();
     hideLoading();
 
     if (!response.ok) {
-      showMessage(data.message || "Invalid credentials", "error");
+      showMessage(data.message || `Login failed (HTTP ${response.status})`, "error");
       return;
     }
 
-    // success
-    setSession(githubId, data.user);
+    if (data.token) localStorage.setItem("robop_jwt", data.token);
+    setSession(githubId, data.user || {});
     showMessage("✅ Access granted. Welcome cadet.", "success");
+
     setTimeout(() => window.location.href = "{{site.baseurl}}/learninggame/home", 800);
 
   } catch (error) {
@@ -608,8 +611,10 @@ async function handleRegister(event) {
 }
 
 
+
   window.addEventListener('load', () => {
     const s = getSession();
+    const token = localStorage.getItem("robop_jwt");
     if (s?.githubId) {
       showMessage(`✅ Already logged in as Cadet ${s.githubId}.`, 'success');
 
@@ -625,6 +630,7 @@ async function handleRegister(event) {
 
   async function signOut() {
     clearSession();
+    localStorage.removeItem("robop_jwt");   // ✅ important
     showMessage('✅ Signed out. Clearance revoked.', 'success');
     setTimeout(() => location.reload(), 650);
   }

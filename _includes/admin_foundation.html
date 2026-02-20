@@ -432,26 +432,16 @@
     console.log("Admin panel script loaded.");
 
     async function getCredentials() {
-      try {
-        const res = await fetch(`${pythonURI}/api/id`, {
-          ...fetchOptions,
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json"
-          },
-        });
+      const res = await fetch(`${BASE_URL}/api/id`, {
+        method: "GET",
+        credentials: "include",
+        headers: { "Accept": "application/json" }
+      });
 
-        if (res.ok) {
-          const data = await res.json();
-          const role = data.role;
-          console.log(role);
-          return role;
-        } else {
-          console.log(`Request failed for with status ${res.status}`);
-        }
-      } catch (err) {
-        console.log(`Error: ${err}`);
-      }
+      if (res.status === 401) return null; // NORMAL
+      if (!res.ok) return null;
+
+      return res.json();
     }
 
     async function getGrades() {
