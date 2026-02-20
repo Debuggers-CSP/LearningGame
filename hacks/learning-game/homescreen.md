@@ -124,10 +124,7 @@ permalink: /learninggame/home
   .title { color: #06b6d4; font-size: 24px; font-weight: 900; text-transform: uppercase; letter-spacing: 4px; }
   .subtitle { text-align: center; color: rgba(103,232,249,0.7); font-size: 12px; font-family: 'Courier New', monospace; }
 
-  /* ✅ HARDEN SCROLL AREA:
-     Keep it as the flex child that fills remaining height.
-     Avoid "align-items:center" here (can cause weird shrink/collapse with overflow).
-  */
+  /* ✅ HARDEN SCROLL AREA */
   .scroll-area {
     flex: 1;
     min-height: 0;
@@ -254,9 +251,7 @@ permalink: /learninggame/home
     padding: 14px 18px 18px 18px;
   }
 
-  /* ✅ HARDEN MAZE SIZE:
-     Give it a minimum height so it never collapses to 0 visually.
-  */
+  /* ✅ HARDEN MAZE SIZE */
   .maze {
     width: 100%;
     max-width: 820px;
@@ -918,7 +913,6 @@ permalink: /learninggame/home
           console.warn("No user ID found in session.");
           return;
       }
-      // The ?t=${Date.now()} makes the URL unique every single time
       const badges = await fetchJSON(`${robopURI}/api/robop/fetch_badges?user_id=${userId}`, { method: "GET" });
 
       badgeShelf.innerHTML = '';
@@ -1321,8 +1315,15 @@ permalink: /learninggame/home
     }
   }
 
+  // ============================
+  // ✅ PSEUDOCODE RANDOMIZER FIX
+  // ============================
   async function fetchRandomPseudocodeQuestion(levelNum) {
-    return await fetchJSON(`${window.PSEUDOCODE_BANK_URL}/random?level=${encodeURIComponent(levelNum)}`, { method: "GET" });
+    const t = Date.now(); // cache-buster
+    return await fetchJSON(
+      `${window.PSEUDOCODE_BANK_URL}/random?level=${encodeURIComponent(levelNum)}&t=${t}`,
+      { method: "GET", cache: "no-store" }
+    );
   }
 
   async function renderPseudoCode() {
@@ -1678,9 +1679,6 @@ ${err.message}
     if (e.key === 'ArrowRight') movePlayer(1, 0);
   });
 
-  /* ✅ REDRAW SAFETY NET:
-     If the page is restored from bfcache or resized, force reflow so maze/progress never look "gone".
-  */
   function hardRefreshUI() {
     updateProgressBar();
     drawMaze();
@@ -1698,7 +1696,6 @@ ${err.message}
     if (!document.hidden) requestAnimationFrame(hardRefreshUI);
   });
 
-  // 2. Fixed Logout Function
   async function handleLogout() {
     try {
       await fetch(`${API_URL}/logout`, {
@@ -1710,7 +1707,6 @@ ${err.message}
       console.warn("Backend logout failed, clearing locally:", e);
     }
    
-    // Always clear local session and redirect
     localStorage.removeItem("userSession");
     window.location.href = '{{ site.baseurl }}/learninggame/login';
   }
