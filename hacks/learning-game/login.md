@@ -384,8 +384,8 @@ comments: True
             <input type="text" class="form-input" id="reg-lastname" placeholder="Enter last name" required>
           </div>
           <div class="form-group">
-            <label class="form-label">Cadet ID (GitHub)</label>
-            <input type="text" class="form-input" id="reg-github" placeholder="Enter GitHub username" required>
+            <label class="form-label">Cadet ID</label>
+            <input type="text" class="form-input" id="reg-github" placeholder="Enter username" required>
           </div>
           <div class="form-group">
             <label class="form-label">Access Code (Password)</label>
