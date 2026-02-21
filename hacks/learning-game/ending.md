@@ -306,8 +306,9 @@ disable_login_script: true
       // Allow override via URL parameter, otherwise defaults to port 3000
       var apiPort = params.get('apiPort') || '3000';
       var API_BASE = window.location.protocol + '//' + window.location.hostname + ':' + apiPort;
-      // Make backend optional - only use if explicitly enabled
-      var useBackend = params.get('useBackend') === 'true' || false;
+      // Enable backend by default; allow explicit URL override with useBackend=false
+      var useBackendParam = params.get('useBackend');
+      var useBackend = useBackendParam !== 'false';
       
       var playerId = localStorage.getItem('learninggame_player_id') || localStorage.getItem('player_id') || params.get('playerId') || params.get('id');
       if (playerId) {
@@ -413,7 +414,7 @@ disable_login_script: true
       function loadAll() {
         if (!useBackend) {
           setLoading(false);
-          setError('Backend is disabled. Add ?useBackend=true to URL to enable.');
+          setError('Backend is disabled via URL parameter (useBackend=false).');
           return;
         }
         if (!playerId) {
@@ -560,6 +561,8 @@ disable_login_script: true
       var selectedDebugLevel = safeGetItem('learninggame_debug_level', '') || '';
       var debugStarted = false;
       var currentDebugProblem = null;
+      var MAX_DEBUG_ATTEMPTS = 3;
+      var debugAttemptsUsed = 0;
 
       function getDebugBadges() {
         return JSON.parse(safeGetItem('learninggame_debug_badges', '[]') || '[]');
@@ -615,13 +618,41 @@ disable_login_script: true
           return;
         }
         debugStarted = true;
+        debugAttemptsUsed = 0;
         chatHintCount = 0;
         safeSetItem('learninggame_debug_level', selectedDebugLevel);
         loadDebugProblem(selectedDebugLevel);
         setDebugLockState(false);
         debugStatus.className = 'status ok';
-        debugStatus.textContent = 'Challenge started: ' + selectedDebugLevel + '.';
+        debugStatus.textContent = 'Challenge started: ' + selectedDebugLevel + '. Attempts left: ' + (MAX_DEBUG_ATTEMPTS - debugAttemptsUsed) + '.';
         if (startDebug) startDebug.textContent = 'Restart Level';
+      }
+
+      function registerIncorrectSubmission(message) {
+        debugAttemptsUsed += 1;
+        var attemptsLeft = MAX_DEBUG_ATTEMPTS - debugAttemptsUsed;
+        debugStatus.className = 'status err';
+        if (attemptsLeft > 0) {
+          debugStatus.textContent = message + '\nAttempts left: ' + attemptsLeft + '.';
+          return;
+        }
+        var answer = currentDebugProblem && currentDebugProblem.answer ? String(currentDebugProblem.answer) : 'No answer available.';
+        debugStatus.textContent = message + '\nNo attempts left. Correct answer:\n' + answer;
+        setDebugLockState(true);
+      }
+
+      function evaluateSubmissionResult(data, expectedOutput) {
+        var expected = String(expectedOutput || '').trim();
+        var actual = data && data.actualOutput != null ? String(data.actualOutput).trim() : String((data && data.stdout) || '').trim();
+
+        if (data && data.is_correct === true) {
+          return { correct: true, expected: expected, actual: actual };
+        }
+        if (data && data.is_correct === false) {
+          return { correct: false, expected: (data.expectedOutput != null ? String(data.expectedOutput).trim() : expected), actual: actual };
+        }
+
+        return { correct: actual === expected, expected: expected, actual: actual };
       }
 
       function validateDebugAnswer(answer) {
@@ -680,30 +711,60 @@ disable_login_script: true
         return window.location.protocol + '//' + window.location.hostname + ':5001';
       }
 
-      function runPythonRequest(code, callback) {
+      function runPythonRequest(code, callback, options) {
         var base = getPythonRunnerBase();
+        var payload = { code: code };
+        if (options && typeof options.expectedOutput === 'string') {
+          payload.expectedOutput = options.expectedOutput;
+        }
+        console.log('[run-python] request payload:', payload);
         fetch(base + '/api/run-python', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ code: code })
+          body: JSON.stringify(payload)
         })
           .then(function (response) {
-            return response.json().then(function (data) {
-              return { ok: response.ok, data: data };
+            return response.text().then(function (text) {
+              var data = null;
+              if (text) {
+                try {
+                  data = JSON.parse(text);
+                } catch (error) {
+                  data = { ok: false, error: text };
+                }
+              }
+              return {
+                ok: response.ok,
+                status: response.status,
+                statusText: response.statusText,
+                data: data
+              };
             });
           })
           .then(function (result) {
-            if (!result.ok || !result.data) {
-              callback({ ok: false, error: 'Execution failed.' });
+            console.log('[run-python] response:', result);
+            if (!result.data) {
+              callback({ ok: false, error: 'Execution failed (HTTP ' + result.status + ').' });
               return;
             }
-            if (!result.data.ok) {
-              callback({ ok: false, error: result.data.error || 'Execution failed.', data: result.data });
+            if (!result.ok) {
+              callback({ ok: false, error: result.data.error || ('Execution failed (HTTP ' + result.status + ').'), data: result.data });
+              return;
+            }
+            var hasJudgeFlag = (typeof result.data.is_correct === 'boolean') || (typeof result.data.passed === 'boolean');
+            var explicitFailure = (result.data.ok === false || result.data.success === false);
+            if (explicitFailure && !hasJudgeFlag) {
+              callback({ ok: false, error: result.data.error || ('Execution failed (HTTP ' + result.status + ').'), data: result.data });
+              return;
+            }
+            if (result.data.error && !hasJudgeFlag && result.data.ok !== true) {
+              callback({ ok: false, error: result.data.error || ('Execution failed (HTTP ' + result.status + ').'), data: result.data });
               return;
             }
             callback({ ok: true, data: result.data });
           })
-          .catch(function () {
+          .catch(function (error) {
+            console.log('[run-python] fetch error:', error);
             callback({ ok: false, error: 'Python runner is offline at ' + base + '. Start python_backend/app.py on port 5001.' });
           });
       }
@@ -742,6 +803,7 @@ disable_login_script: true
           debugStatus.className = 'status';
           debugStatus.textContent = '';
           debugStarted = false;
+          debugAttemptsUsed = 0;
           chatHintCount = 0;
           setDebugLockState(true);
           setDebugProblem(null);
@@ -758,6 +820,13 @@ disable_login_script: true
             debugStatus.textContent = 'Start the challenge to load a problem first.';
             return;
           }
+          if (debugAttemptsUsed >= MAX_DEBUG_ATTEMPTS) {
+            var finalAnswer = currentDebugProblem && currentDebugProblem.answer ? String(currentDebugProblem.answer) : 'No answer available.';
+            debugStatus.className = 'status err';
+            debugStatus.textContent = 'No attempts left. Correct answer:\n' + finalAnswer;
+            setDebugLockState(true);
+            return;
+          }
           var answer = (debugAnswer && debugAnswer.value) ? debugAnswer.value.trim() : '';
           if (!answer) {
             debugStatus.className = 'status err';
@@ -771,29 +840,22 @@ disable_login_script: true
           }
           debugStatus.className = 'status';
           debugStatus.textContent = 'Running code...';
+          var expectedOutput = currentDebugProblem && currentDebugProblem.expectedOutput ? String(currentDebugProblem.expectedOutput) : '';
           runPythonRequest(answer, function (result) {
             if (!result.ok) {
-              debugStatus.className = 'status err';
-              debugStatus.textContent = result.error || 'Execution failed.';
+              registerIncorrectSubmission(result.error || 'Unknown server error.Try again later.');
               return;
             }
-            var stderr = result.data.stderr || '';
-            if (stderr.trim()) {
-              debugStatus.className = 'status err';
-              debugStatus.textContent = 'Error: ' + stderr.trim();
-              return;
-            }
-            var expected = currentDebugProblem && currentDebugProblem.expectedOutput ? String(currentDebugProblem.expectedOutput).trim() : '';
-            var actual = (result.data.stdout || '').trim();
-            if (expected && actual !== expected) {
-              debugStatus.className = 'status err';
-              debugStatus.textContent = 'Output mismatch. Expected:\n' + expected + '\nGot:\n' + (actual || '(no output)');
-              return;
+            var evaluation = evaluateSubmissionResult(result.data, expectedOutput);
+            if (!evaluation.correct) {
+              registerIncorrectSubmission('Output mismatch. \n Expected:\t' + evaluation.expected + '\nGot:\t' + (evaluation.actual || '(no output)'));
+              return
             }
             debugStatus.className = 'status ok';
             debugStatus.textContent = 'Correct ✅ Output matches. Badge earned for this level.';
             completeDebugLevel();
-          });
+            setDebugLockState(true);
+          }, { expectedOutput: expectedOutput });
         });
       }
 
