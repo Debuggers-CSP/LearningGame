@@ -9,21 +9,53 @@ permalink: /learninggame/home
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
 
-  /* FIX: page can scroll if needed, but main scrolling still happens INSIDE the app */
+  /* =========================================================
+     ✅ FIX: Progress bar + maze "disappearing"
+     Root cause is almost always one of these:
+     1) Parent layout creates a new stacking context or overlay covers your app
+     2) Flex + overflow + min-height collapse causes children to render at 0 height
+     3) Maze renders while width is 0, so it looks gone until reflow
+     This patch hardens stacking + sizing and forces redraw on resize/pageshow.
+     ========================================================= */
+
   body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     background: linear-gradient(135deg, #020617 0%, #0f172a 50%, #1e1b4b 100%);
     min-height: 100vh;
     width: 100%;
-    display: flex;
-    justify-content: center;
-    align-items: flex-start;      /* FIX: prevents top clipping */
-    overflow-x: hidden;           /* allow vertical scroll if viewport is tiny */
+    overflow-x: hidden;
     overflow-y: auto;
     position: relative;
     padding: 24px;
+    display: block !important;
   }
 
+  .logout-fixed-btn {
+    position: fixed;
+    bottom: 20px;
+    left: 20px;
+    z-index: 1000;
+    padding: 10px 18px;
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.4);
+    color: #ef4444;
+    border-radius: 10px;
+    font-weight: 800;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    cursor: pointer;
+    backdrop-filter: blur(10px);
+    transition: all 0.3s ease;
+  }
+  .logout-fixed-btn:hover {
+    background: #ef4444;
+    color: white;
+    box-shadow: 0 0 20px rgba(239, 68, 68, 0.4);
+    transform: translateY(-2px);
+  }
+
+  /* Background layers: keep them BEHIND the app no matter what */
   .stars { position: fixed; inset: 0; overflow: hidden; z-index: 0; pointer-events: none; }
   .star { position: absolute; width: 2px; height: 2px; background: white; border-radius: 50%; animation: twinkle 3s infinite; }
   @keyframes twinkle { 0%, 100% { opacity: 0.3; } 50% { opacity: 1; } }
@@ -33,7 +65,8 @@ permalink: /learninggame/home
     position: fixed; top: 10%; left: 10%;
     width: 500px; height: 500px;
     background: radial-gradient(circle, rgba(6,182,212,0.15), transparent 70%);
-    filter: blur(80px); z-index: 0;
+    filter: blur(80px);
+    z-index: 0;
     pointer-events: none;
   }
   body::after {
@@ -41,27 +74,42 @@ permalink: /learninggame/home
     position: fixed; bottom: 10%; right: 10%;
     width: 500px; height: 500px;
     background: radial-gradient(circle, rgba(168,85,247,0.15), transparent 70%);
-    filter: blur(80px); z-index: 0;
+    filter: blur(80px);
+    z-index: 0;
     pointer-events: none;
   }
 
-  /* App container: fixed viewport-ish size, internal scrolling */
-  .container {
+  /* App wrapper is always ABOVE background layers */
+  .learninggame-root{
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding-top: 0;
     position: relative;
-    width: min(900px, 95vw);
-    height: min(860px, calc(100vh - 48px));   /* app fits viewport */
-    min-height: 740px;
-    max-height: calc(100vh - 48px);
-    background: rgba(15, 23, 42, 0.85);
+    z-index: 2;
+  }
+
+  .learninggame-root > .container{
+    margin-left: auto !important;
+    margin-right: auto !important;
+  }
+
+  .learninggame-root .container {
+    position: relative;
+    width: min(900px, 95vw) !important;
+    height: min(860px, calc(100vh - 48px)) !important;
+    min-height: 740px !important;
+    max-height: calc(100vh - 48px) !important;
+    background: rgba(15, 23, 42, 0.85) !important;
     backdrop-filter: blur(20px);
-    border-radius: 24px;
-    border: 2px solid rgba(6,182,212,0.4);
+    border-radius: 24px !important;
+    border: 2px solid rgba(6,182,212,0.4) !important;
     box-shadow: 0 0 60px rgba(6,182,212,0.25);
-    overflow: hidden; /* internal scroll lives in .scroll-area */
-    z-index: 1;
+    overflow: hidden;
+    z-index: 2;
     display: flex;
     flex-direction: column;
-    margin: 0 auto;
   }
 
   .title-section {
@@ -76,13 +124,15 @@ permalink: /learninggame/home
   .title { color: #06b6d4; font-size: 24px; font-weight: 900; text-transform: uppercase; letter-spacing: 4px; }
   .subtitle { text-align: center; color: rgba(103,232,249,0.7); font-size: 12px; font-family: 'Courier New', monospace; }
 
-  /* Scroll INSIDE the app */
+  /* ✅ HARDEN SCROLL AREA */
   .scroll-area {
     flex: 1;
+    min-height: 0;
+    width: 100%;
     overflow-y: auto;
     overflow-x: hidden;
     padding-bottom: 18px;
-    min-height: 0; /* critical for flex children scrolling */
+    display: block;
   }
   .scroll-area::-webkit-scrollbar { width: 7px; }
   .scroll-area::-webkit-scrollbar-track { background: rgba(30, 41, 59, 0.25); border-radius: 6px; }
@@ -201,11 +251,13 @@ permalink: /learninggame/home
     padding: 14px 18px 18px 18px;
   }
 
+  /* ✅ HARDEN MAZE SIZE */
   .maze {
     width: 100%;
     max-width: 820px;
     height: auto;
     aspect-ratio: 15 / 11;
+    min-height: 420px;
     background: rgba(2, 6, 23, 0.5);
     backdrop-filter: blur(10px);
     border-radius: 20px;
@@ -263,7 +315,6 @@ permalink: /learninggame/home
     font-family: 'Courier New', monospace;
   }
 
-  /* Modal: fixed so it covers the app even if user scrolled inside */
   .question-modal {
     display: none;
     position: fixed;
@@ -489,9 +540,26 @@ permalink: /learninggame/home
   .hint-content-wrapper::-webkit-scrollbar-thumb { background: rgba(59, 130, 246, 0.5); border-radius: 3px; }
   .chat-messages::-webkit-scrollbar-thumb:hover,
   .hint-content-wrapper::-webkit-scrollbar-thumb:hover { background: rgba(59, 130, 246, 0.7); }
+
+  /* Keep your internal centering inside the app */
+  .progress-bar-container,
+  .maze-container{
+    width: 100%;
+    max-width: 820px;
+    margin-inline: auto !important;
+  }
+
+  .progress-bar-container{
+    margin: 10px 0 0 0 !important;
+  }
+
+  .maze{
+    margin: 0 auto !important;
+  }
 </style>
 
 <div class="stars" id="stars"></div>
+<button class="logout-fixed-btn" id="logoutBtn">Logout</button>
 
 <div id="badgeAwardModal" class="badge-award-modal">
   <h2 id="badgeAwardTitle">MODULE MASTER!</h2>
@@ -502,61 +570,61 @@ permalink: /learninggame/home
   <button class="btn btn-blue" id="claimBadgeBtn" style="width: 100%;">Claim Badge</button>
 </div>
 
-<div class="container">
-  <div class="title-section">
-    <div class="title-header">
-      <div class="title-icon">🚀</div>
-      <div class="title">Station Navigation</div>
-    </div>
-    <div class="subtitle">Cadet Training Protocol // AI Assistant Enabled</div>
-  </div>
-
-  <!-- EVERYTHING BELOW SCROLLS INSIDE THE APP -->
-  <div class="scroll-area">
-    <div class="progress-bar-container">
-      <div class="progress-header">STATION_INTEGRITY_MAP</div>
-
-      <div class="progress-main">
-        <div class="progress-percentage" id="progressPercentage">0%</div>
-        <div class="progress-status" id="progressStatus">PROTOCOL_SYNCED</div>
+<div class="learninggame-root">
+  <div class="container">
+    <div class="title-section">
+      <div class="title-header">
+        <div class="title-icon">🚀</div>
+        <div class="title">Station Navigation</div>
       </div>
-
-      <div class="progress-boxes" id="progressBoxes">
-        <div class="progress-box"></div><div class="progress-box"></div><div class="progress-box"></div>
-        <div class="progress-box"></div><div class="progress-box"></div><div class="progress-box"></div>
-        <div class="progress-box"></div><div class="progress-box"></div><div class="progress-box"></div>
-        <div class="progress-box"></div><div class="progress-box"></div><div class="progress-box"></div>
-        <div class="progress-box"></div><div class="progress-box"></div><div class="progress-box"></div>
-      </div>
-
-      <div class="badge-shelf" id="badgeShelf">
-        <span style="color: rgba(103,232,249,0.3); font-size: 9px; letter-spacing: 1px;">EARNED_BADGES: [EMPTY]</span>
-      </div>
-
-      <div class="progress-stats">
-        <div class="stat-item">
-          <span class="stat-value" id="statSectors">0/5</span>
-          <span class="stat-label">SECTORS</span>
-        </div>
-        <div class="stat-item">
-          <span class="stat-value" id="statLocked">5</span>
-          <span class="stat-label">LOCKED</span>
-        </div>
-        <div class="stat-item">
-          <span class="stat-value" id="statConnected">CONNECTED</span>
-          <span class="stat-label">DATABASE</span>
-        </div>
-      </div>
+      <div class="subtitle">Cadet Training Protocol // AI Assistant Enabled</div>
     </div>
 
-    <div class="maze-container">
-      <div class="maze" id="maze"></div>
-      <div class="controls-hint">Use arrow keys to navigate • Click 🤖 for AI help</div>
+    <div class="scroll-area">
+      <div class="progress-bar-container">
+        <div class="progress-header">STATION_INTEGRITY_MAP</div>
+
+        <div class="progress-main">
+          <div class="progress-percentage" id="progressPercentage">0%</div>
+          <div class="progress-status" id="progressStatus">PROTOCOL_SYNCED</div>
+        </div>
+
+        <div class="progress-boxes" id="progressBoxes">
+          <div class="progress-box"></div><div class="progress-box"></div><div class="progress-box"></div>
+          <div class="progress-box"></div><div class="progress-box"></div><div class="progress-box"></div>
+          <div class="progress-box"></div><div class="progress-box"></div><div class="progress-box"></div>
+          <div class="progress-box"></div><div class="progress-box"></div><div class="progress-box"></div>
+          <div class="progress-box"></div><div class="progress-box"></div><div class="progress-box"></div>
+        </div>
+
+        <div class="badge-shelf" id="badgeShelf">
+          <span style="color: rgba(103,232,249,0.3); font-size: 9px; letter-spacing: 1px;">EARNED_BADGES: [EMPTY]</span>
+        </div>
+
+        <div class="progress-stats">
+          <div class="stat-item">
+            <span class="stat-value" id="statSectors">0/5</span>
+            <span class="stat-label">SECTORS</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-value" id="statLocked">5</span>
+            <span class="stat-label">LOCKED</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-value" id="statConnected">CONNECTED</span>
+            <span class="stat-label">DATABASE</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="maze-container">
+        <div class="maze" id="maze"></div>
+        <div class="controls-hint">Use arrow keys to navigate • Click 🤖 for AI help</div>
+      </div>
     </div>
   </div>
 </div>
 
-<!-- Modal (fixed overlay) -->
 <div class="question-modal" id="questionModal">
   <div class="question-card">
     <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 20px;">
@@ -650,7 +718,6 @@ permalink: /learninggame/home
 
   const robopURI = (await getRobopURI()) || "";
 
-  // Always include credentials (cookies/session), and allow cross-origin when backend enables CORS
   const AUTH = {
     ...fetchOptions,
     credentials: (fetchOptions && fetchOptions.credentials) ? fetchOptions.credentials : "include",
@@ -664,7 +731,6 @@ permalink: /learninggame/home
   window.PSEUDOCODE_BANK_URL = PSEUDOCODE_BANK_URL;
   window.authOptions = AUTH;
 
-  // ---------- safer fetch helpers ----------
   function prettyUrl(u) {
     try { return new URL(u, window.location.origin).toString(); } catch { return u; }
   }
@@ -699,9 +765,7 @@ permalink: /learninggame/home
       throw err;
     }
   }
-  // ----------------------------------------
 
-  // local progress
   const PROGRESS_KEY = "maze_progress_v1";
   const completedSectors = new Set();
 
@@ -727,7 +791,6 @@ permalink: /learninggame/home
     }
   }
 
-  // stars
   const starsContainer = document.getElementById('stars');
   for (let i = 0; i < 150; i++) {
     const star = document.createElement('div');
@@ -737,7 +800,6 @@ permalink: /learninggame/home
     starsContainer.appendChild(star);
   }
 
-  // UI elements
   const mazeEl = document.getElementById('maze');
   const modal = document.getElementById('questionModal');
   const mContent = document.getElementById('moduleContent');
@@ -761,7 +823,6 @@ permalink: /learninggame/home
   const sendChatBtn = document.getElementById('sendChatBtn');
   const typingIndicator = document.getElementById('typingIndicator');
 
-  // game state
   let moduleAttempts = [0, 0, 0];
   const weights = [0.5, 0.3, 0.2];
   let currentSectorNum = 0;
@@ -769,10 +830,8 @@ permalink: /learninggame/home
   let usedAutofill = false;
   let finalScore = 0;
 
-  // pseudocode state
   let currentPseudo = { level: null, question_id: null, question: null };
 
-  // badge system
   let badgesEarned = [];
   const badgeIcons = ["🤖", "📜", "🧠"];
   const badgeNames = ["Logic Pilot", "Syntax Architect", "Theory Master"];
@@ -789,12 +848,13 @@ permalink: /learninggame/home
     document.getElementById('badgeAwardName').textContent = `Sector ${s} Module Completed Successfully.`;
     badgeModal.style.display = 'block';
 
-    claimBtn.onclick = () => {
+    claimBtn.onclick = async () => {
       badgesEarned.push(id);
       badgeModal.style.display = 'none';
+      await updateBackendBadges(id, s, m);
       animateBadgeToShelf(badgeIcons[m]);
       updateBadgeUI();
-      updateBackendBadges(id, s, m);
+      
     };
   }
 
@@ -819,8 +879,16 @@ permalink: /learninggame/home
   }
 
   async function updateBackendBadges(id, s, m) {
-    try {
-      await fetchJSON(`${robopURI}/api/robop/assign_badge`, {
+
+      const session = JSON.parse(localStorage.getItem("userSession") || "{}");
+      const userId = session.id; // This is the 'id' from the data.user object saved during login
+
+      if (!userId) {
+          console.warn("No user ID found in session.");
+          return;
+      }
+    try { 
+      await fetchJSON(`${robopURI}/api/robop/assign_badge?user_id=${userId}`, {
         method: "POST",
         body: JSON.stringify({
           badge_name: id,
@@ -837,7 +905,15 @@ permalink: /learninggame/home
 
   async function updateBadgeUI() {
     try {
-      const badges = await fetchJSON(`${robopURI}/api/robop/fetch_badges`, { method: "GET" });
+       // 1. Get the user object from local storage
+      const session = JSON.parse(localStorage.getItem("userSession") || "{}");
+      const userId = session.id; // This is the 'id' from the data.user object saved during login
+
+      if (!userId) {
+          console.warn("No user ID found in session.");
+          return;
+      }
+      const badges = await fetchJSON(`${robopURI}/api/robop/fetch_badges?user_id=${userId}`, { method: "GET" });
 
       badgeShelf.innerHTML = '';
 
@@ -884,7 +960,6 @@ permalink: /learninggame/home
     }
   }
 
-  // teacher data
   const teacherData = {
     1: { title: "Stop 1: Training",
       msg: "Robot code is a pseudocode-style language with four commands—MOVE_FORWARD(), ROTATE_LEFT(), ROTATE_RIGHT(), and CAN_MOVE(direction)—used to control a robot through a maze. Pseudocode: Use plain-language, step-by-step logic (variables, conditionals, loops, and logical flow) to describe how your algorithm should work before worrying about strict programming syntax. Computational thinking: break the problem into small rules, test your logic, and iterate based on what you observe.",
@@ -923,7 +998,6 @@ permalink: /learninggame/home
       ] }
   };
 
-  // AI chat
   let currentHintLevel = 0;
   let conversationHistory = [];
 
@@ -1043,7 +1117,6 @@ permalink: /learninggame/home
     else helpBotIcon.classList.remove('pulsing');
   }
 
-  // event listeners
   sendChatBtn.addEventListener('click', handleSendMessage);
   chatInput.addEventListener('keypress', (e) => {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendMessage(); }
@@ -1058,7 +1131,6 @@ permalink: /learninggame/home
   prevHintBtn.addEventListener('click', prevHint);
   nextHintBtn.addEventListener('click', nextHint);
 
-  // progress UI
   function updateProgressBar() {
     const totalSectors = 5;
     const completedCount = completedSectors.size;
@@ -1078,10 +1150,9 @@ permalink: /learninggame/home
     });
   }
 
-  // maze
   const mazeLayout = [
     [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-    [2,1,1,1,4,1,1,1,5,1,1,1,6,1,1],
+    [2,1,1,1,4,1,1,1,5,1,1,1,6,1,0],
     [0,1,0,1,0,1,0,1,0,1,0,1,0,1,0],
     [0,1,1,1,1,1,1,1,1,1,1,1,1,1,0],
     [0,1,0,1,0,1,0,1,0,1,0,1,0,1,0],
@@ -1104,6 +1175,7 @@ permalink: /learninggame/home
   };
 
   function drawMaze() {
+    if (!mazeEl) return;
     mazeEl.innerHTML = '';
     mazeLayout.forEach((row, y) => {
       row.forEach((val, x) => {
@@ -1170,6 +1242,8 @@ permalink: /learninggame/home
     const level = robotLevels[currentSectorNum];
     let rPos = [...level.start];
     let dir = 0;
+
+    updateRobotGrid(rPos, dir); 
     const commands = [];
     const robot = {
       MoveForward: (n=1) => { for (let i=0; i<n; i++) commands.push('MOVE'); },
@@ -1211,6 +1285,7 @@ permalink: /learninggame/home
       } else {
         feedback.style.color = "#fbbf24";
         feedback.textContent = "⚠️ Short of target. Try again.";
+        updateRobotGrid(level.start,0); 
       }
     } catch (e) {
       feedback.style.color = "#ef4444";
@@ -1240,8 +1315,31 @@ permalink: /learninggame/home
     }
   }
 
+  // ============================
+  // ✅ PSEUDOCODE RANDOMIZER FIX
+  // ============================
   async function fetchRandomPseudocodeQuestion(levelNum) {
-    return await fetchJSON(`${window.PSEUDOCODE_BANK_URL}/random?level=${encodeURIComponent(levelNum)}`, { method: "GET" });
+    const t = Date.now();
+
+    const lastQid = Number(localStorage.getItem("last_pseudo_qid") || "0");
+    const exclude = lastQid > 0 ? `&exclude_id=${encodeURIComponent(lastQid)}` : "";
+
+    const data = await fetchJSON(
+      `${window.PSEUDOCODE_BANK_URL}/random?level=${encodeURIComponent(levelNum)}${exclude}&t=${t}`,
+      {
+        method: "GET",
+        cache: "no-store",
+        headers: {
+          "Cache-Control": "no-store"
+        }
+      }
+    );
+
+    if (data && data.question_id != null) {
+      localStorage.setItem("last_pseudo_qid", String(data.question_id));
+    }
+
+    return data;
   }
 
   async function renderPseudoCode() {
@@ -1416,6 +1514,7 @@ ${err.message}
           feedback.textContent="✅ Correct!";
           backBtn.disabled=false;
           backBtn.style.opacity="1";
+          usedAutofill=false;
           awardBadge(currentSectorNum, 2);
         } else {
           feedback.style.color="#ef4444";
@@ -1426,7 +1525,6 @@ ${err.message}
     });
   }
 
-  // ---------- FIXED AUTOFILL ----------
   autofillBtn.onclick = async () => {
     try {
       usedAutofill = true;
@@ -1470,6 +1568,7 @@ ${err.message}
 
         let answer = null;
 
+        // 1) Try AI autofill (backend should accept POST)
         try {
           const ai = await fetchJSON(`${window.PSEUDOCODE_BANK_URL}/ai_autofill`, {
             method: "POST",
@@ -1478,9 +1577,10 @@ ${err.message}
           if (ai && ai.success && ai.answer) answer = ai.answer;
         } catch (e) { answer = null; }
 
+        // 2) Fallback: use robop_api /autofill
         if (!answer) {
           try {
-            const plain = await fetchJSON(`${window.PSEUDOCODE_BANK_URL}/autofill`, {
+            const plain = await fetchJSON(`${window.API_URL}/autofill`, {
               method: "POST",
               body: JSON.stringify(payload)
             });
@@ -1488,6 +1588,7 @@ ${err.message}
           } catch (e) { answer = null; }
         }
 
+        // 3) Last resort: try again
         if (!answer) {
           const fb = await fetchJSON(`${window.API_URL}/autofill`, {
             method: "POST",
@@ -1509,7 +1610,6 @@ ${err.message}
       feedback.style.color = '#ef4444';
     }
   };
-  // ----------------------------------
 
   backBtn.onclick = async () => {
     if (usedAutofill) {
@@ -1581,6 +1681,7 @@ ${err.message}
 
   document.addEventListener('keydown', e => {
     if (e.key === 'S' && e.shiftKey && modal.classList.contains('active')) {
+      usedAutofill = true;
       awardBadge(currentSectorNum, currentQuestion);
       nextBtn.disabled = false;
       nextBtn.style.opacity = "1";
@@ -1597,7 +1698,41 @@ ${err.message}
     if (e.key === 'ArrowRight') movePlayer(1, 0);
   });
 
-  // init
+  function hardRefreshUI() {
+    updateProgressBar();
+    drawMaze();
+  }
+
+  window.addEventListener('resize', () => {
+    requestAnimationFrame(hardRefreshUI);
+  });
+
+  window.addEventListener('pageshow', () => {
+    requestAnimationFrame(hardRefreshUI);
+  });
+
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) requestAnimationFrame(hardRefreshUI);
+  });
+
+  async function handleLogout() {
+    try {
+      await fetch(`${API_URL}/logout`, {
+        ...fetchOptions,
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        mode: "cors",
+      });
+    } catch (e) {
+      console.warn("Backend logout failed, clearing locally:", e);
+    }
+   
+    localStorage.removeItem("userSession");
+    window.location.href = '{{ site.baseurl }}/learninggame/login';
+  }
+
+  document.getElementById('logoutBtn').onclick = handleLogout;
   loadProgress();
   drawMaze();
   updateProgressBar();

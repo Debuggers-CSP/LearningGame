@@ -1,292 +1,418 @@
 ---
-layout: base
+layout: opencs
 title: Character Selection Protocol
-permalink: /character/spacesuit
+permalink: /learninggame/character
 ---
 
 <style>
-    /* SPACE CADET THEME UI */
-    body {
-        background: linear-gradient(135deg, #020617 0%, #0f172a 50%, #1e1b4b 100%);
-        color: white;
-        font-family: 'Segoe UI', Tahoma, sans-serif;
-        margin: 0;
-        padding: 40px 20px;
-        display: flex;
-        justify-content: center;
-        min-height: 100vh;
-    }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
 
-    .instruction-card {
-        background: rgba(15, 23, 42, 0.9);
-        backdrop-filter: blur(20px);
-        border-radius: 24px;
-        border: 2px solid rgba(6, 182, 212, 0.4);
-        padding: 40px;
-        max-width: 900px;
-        box-shadow: 0 0 60px rgba(6, 182, 212, 0.25);
-        position: relative;
-    }
+  /* Hide the global top header (the "Class of 2026" + wifi symbol bar) */
+  body > header,
+  body > nav,
+  #header,
+  .site-header,
+  .top-bar,
+  .topbar,
+  .navbar,
+  .navbar-container {
+    display: none !important;
+  }
 
-    /* Tech UI Accents */
-    .instruction-card::before {
-        content: "STATUS: ENCRYPTED BEYOND PROTOCOL";
-        position: absolute;
-        top: 15px;
-        right: 25px;
-        font-family: monospace;
-        font-size: 10px;
-        color: #06b6d4;
-        opacity: 0.6;
-    }
+  body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(135deg, #020617 0%, #0f172a 50%, #1e1b4b 100%);
+    min-height: 100vh;
+    width: 100%;
+    overflow-x: hidden;
+    overflow-y: auto;
+    position: relative;
+    padding: 24px;
+  }
 
-    h1 { color: #06b6d4; text-transform: uppercase; letter-spacing: 4px; text-shadow: 0 0 15px rgba(6,182,212,0.5); margin-bottom: 5px; }
-    .subtitle { color: #67e8f9; font-family: 'Courier New', monospace; font-size: 14px; margin-bottom: 30px; }
-    
-    h2 { color: #fbbf24; margin-top: 35px; border-bottom: 1px solid rgba(251,191,36,0.3); padding-bottom: 8px; font-size: 20px; }
-    
-    .step { 
-        background: rgba(6, 182, 212, 0.05); 
-        border-left: 4px solid #06b6d4; 
-        padding: 20px; 
-        margin: 20px 0;
-        border-radius: 0 12px 12px 0;
-    }
+  /* Background layers */
+  .stars { position: fixed; inset: 0; overflow: hidden; z-index: 0; pointer-events: none; }
+  .star { position: absolute; width: 2px; height: 2px; background: white; border-radius: 50%; animation: twinkle 3s infinite; }
+  @keyframes twinkle { 0%, 100% { opacity: 0.3; } 50% { opacity: 1; } }
 
-    .pt-badge { 
-        background: #10b981; 
-        color: white; 
-        padding: 4px 12px; 
-        border-radius: 999px; 
-        font-size: 11px; 
-        font-weight: 900; 
-        text-transform: uppercase;
-        margin-bottom: 10px; 
-        display: inline-block; 
-    }
+  body::before {
+    content: '';
+    position: fixed; top: 10%; left: 10%;
+    width: 500px; height: 500px;
+    background: radial-gradient(circle, rgba(6,182,212,0.15), transparent 70%);
+    filter: blur(80px);
+    z-index: 0;
+    pointer-events: none;
+  }
+  body::after {
+    content: '';
+    position: fixed; bottom: 10%; right: 10%;
+    width: 500px; height: 500px;
+    background: radial-gradient(circle, rgba(168,85,247,0.15), transparent 70%);
+    filter: blur(80px);
+    z-index: 0;
+    pointer-events: none;
+  }
 
-    pre { 
-        background: #020617; 
-        padding: 15px; 
-        border-radius: 12px; 
-        border: 1px solid #1e293b; 
-        color: #a5f3fc;
-        font-family: 'Consolas', 'Courier New', monospace;
-        font-size: 13px;
-        overflow-x: auto;
-    }
+  .learninggame-root{
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    position: relative;
+    z-index: 2;
+  }
 
-    code { color: #fbbf24; font-weight: bold; }
+  .container {
+    position: relative;
+    width: min(900px, 95vw);
+    background: rgba(15, 23, 42, 0.85);
+    backdrop-filter: blur(20px);
+    border-radius: 24px;
+    border: 2px solid rgba(6,182,212,0.4);
+    box-shadow: 0 0 60px rgba(6,182,212,0.25);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
 
-    ul { line-height: 1.6; color: #cbd5e1; }
-    
-    .nav-btn {
-        display: inline-block;
-        margin-top: 30px;
-        padding: 15px 40px;
-        background: linear-gradient(135deg, #06b6d4, #3b82f6);
-        color: white;
-        text-decoration: none;
-        border-radius: 12px;
-        font-weight: bold;
-        text-transform: uppercase;
-        letter-spacing: 1px;
-        box-shadow: 0 10px 20px rgba(6, 182, 212, 0.3);
-        transition: 0.3s;
-    }
+  .title-section {
+    width: 100%;
+    background: rgba(15,23,42,0.95);
+    padding: 14px 18px;
+    border-bottom: 2px solid rgba(6,182,212,0.3);
+    flex-shrink: 0;
+  }
 
-    .nav-btn:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 15px 30px rgba(6, 182, 212, 0.5);
-    }
+  .title-header { display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 6px; }
+  .title { color: #06b6d4; font-size: 22px; font-weight: 900; text-transform: uppercase; letter-spacing: 4px; }
+  .subtitle { text-align: center; color: rgba(103,232,249,0.7); font-size: 12px; font-family: 'Courier New', monospace; }
+
+  .content {
+    padding: 18px;
+  }
+
+  .section {
+    background: rgba(2, 6, 23, 0.5);
+    border: 2px solid rgba(16,185,129,0.3);
+    border-radius: 20px;
+    padding: 18px;
+  }
+
+  .section-title {
+    color: #fbbf24;
+    font-size: 14px;
+    font-weight: 900;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+
+  .helper {
+    color: rgba(226,232,240,0.9);
+    font-size: 12px;
+    line-height: 1.55;
+    margin-bottom: 14px;
+  }
+
+  #character-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+    gap: 14px;
+  }
+
+  .character-card {
+    background: rgba(15, 23, 42, 0.65);
+    border: 1px solid rgba(6, 182, 212, 0.25);
+    border-radius: 16px;
+    padding: 14px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .character-card:hover {
+    transform: translateY(-3px);
+    border-color: rgba(251, 191, 36, 0.55);
+    box-shadow: 0 0 22px rgba(251, 191, 36, 0.22);
+  }
+
+  .character-card.selected {
+    border-color: rgba(6,182,212,0.9);
+    box-shadow: 0 0 30px rgba(6,182,212,0.35);
+    background: rgba(6, 182, 212, 0.10);
+  }
+
+  .character-img {
+    width: 100%;
+    height: 180px;
+    object-fit: contain;
+    background: rgba(2,6,23,0.35);
+    border: 1px solid rgba(6,182,212,0.18);
+    border-radius: 12px;
+    padding: 8px;
+    margin-bottom: 10px;
+  }
+
+  .character-name {
+    color: #06b6d4;
+    font-size: 14px;
+    font-weight: 900;
+    letter-spacing: 0.5px;
+    margin-bottom: 6px;
+  }
+
+  .character-trait {
+    color: #fbbf24;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+
+  .character-desc {
+    color: rgba(226,232,240,0.85);
+    font-size: 12px;
+    line-height: 1.45;
+  }
+
+  .input-wrap {
+    margin-top: 16px;
+    background: rgba(15, 23, 42, 0.6);
+    border: 1px solid rgba(6, 182, 212, 0.25);
+    border-radius: 14px;
+    padding: 14px;
+  }
+
+  .label {
+    display: block;
+    color: rgba(103,232,249,0.8);
+    font-weight: 900;
+    letter-spacing: 2px;
+    font-size: 11px;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+
+  #character-name-input {
+    width: 100%;
+    padding: 12px 12px;
+    border-radius: 10px;
+    border: 1px solid rgba(6,182,212,0.35);
+    background: rgba(2, 6, 23, 0.7);
+    color: white;
+    outline: none;
+    font-size: 14px;
+  }
+  #character-name-input:focus {
+    border-color: rgba(6,182,212,0.9);
+    box-shadow: 0 0 0 3px rgba(6,182,212,0.15);
+  }
+
+  #error-message {
+    color: #ef4444;
+    margin-top: 10px;
+    display: none;
+    font-size: 12px;
+    font-weight: 800;
+  }
+
+  .btn-row {
+    display: flex;
+    justify-content: center;
+    margin-top: 14px;
+  }
+
+  #submit-btn {
+    padding: 14px 22px;
+    background: linear-gradient(135deg, #06b6d4, #3b82f6);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-size: 13px;
+    cursor: pointer;
+    box-shadow: 0 10px 20px rgba(6, 182, 212, 0.25);
+    transition: 0.2s ease;
+  }
+  #submit-btn:hover { transform: translateY(-2px); box-shadow: 0 14px 26px rgba(6, 182, 212, 0.35); }
+  #submit-btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; box-shadow: none; }
 </style>
 
-<div class="instruction-card">
-    <h1>🚀 Select Your Character</h1>
-    <div class="subtitle">// Choose your cadet identity and customize your profile //</div>
+<div class="stars" id="stars"></div>
 
-    <div style="margin: 40px 0;">
-        <div id="character-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin: 30px 0;">
-            <!-- Characters will be rendered here by JavaScript -->
-        </div>
-
-        <div style="background: rgba(6, 182, 212, 0.05); border: 2px solid rgba(6, 182, 212, 0.2); border-radius: 12px; padding: 25px; margin-top: 30px;">
-            <label style="display: block; margin-bottom: 10px; color: #67e8f9; font-weight: bold;">Enter Your Character Name:</label>
-            <input type="text" id="character-name-input" placeholder="Type your cadet name..." style="width: 100%; padding: 12px; border: 1px solid rgba(6, 182, 212, 0.4); border-radius: 8px; background: rgba(2, 6, 23, 0.8); color: white; font-size: 16px; box-sizing: border-box;">
-            <p id="error-message" style="color: #ef4444; margin-top: 10px; display: none; font-size: 14px;"></p>
-        </div>
-
-        <div style="text-align: center; margin-top: 30px;">
-            <button id="submit-btn" style="padding: 15px 40px; background: linear-gradient(135deg, #06b6d4, #3b82f6); color: white; border: none; border-radius: 12px; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; font-size: 16px; cursor: pointer; box-shadow: 0 10px 20px rgba(6, 182, 212, 0.3); transition: 0.3s;">Ready to Enter Maze →</button>
-        </div>
+<div class="learninggame-root">
+  <div class="container">
+    <div class="title-section">
+      <div class="title-header">
+        <div style="font-size: 20px;">🚀</div>
+        <div class="title">Character Selection</div>
+      </div>
+      <div class="subtitle">Cadet Identity Protocol // Choose Your Suit</div>
     </div>
+
+    <div class="content">
+      <div class="section">
+        <div class="section-title">Select Your Suit</div>
+        <div class="helper">
+          Choose a class, then enter your cadet name. Your selection will carry into the maze.
+        </div>
+
+        <div id="character-grid"></div>
+
+        <div class="input-wrap">
+          <label class="label">Cadet Name</label>
+          <input type="text" id="character-name-input" placeholder="Type your cadet name..." />
+          <p id="error-message"></p>
+
+          <div class="btn-row">
+            <button id="submit-btn">Ready to Enter Maze →</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
 
 <script>
-// LIST: Define characters using an array
-const characters = [
-    { 
-        name: "Axiom Space Suit", 
-        icon: "🛰️",
-        image: "{{ '/images/learninggame/axiom.png' | relative_url }}", // Add character image path
-        trait: "Advanced Commercial Design",
-        description: "Modern next-gen suit technology"
+  // Stars background (match homescreen)
+  const starsContainer = document.getElementById('stars');
+  for (let i = 0; i < 140; i++) {
+    const star = document.createElement('div');
+    star.className = 'star';
+    star.style.left = Math.random() * 100 + '%';
+    star.style.top = Math.random() * 100 + '%';
+    star.style.animationDelay = Math.random() * 3 + 's';
+    star.style.opacity = Math.random() * 0.7 + 0.25;
+    starsContainer.appendChild(star);
+  }
+
+  const characters = [
+    {
+      name: "Axiom Space Suit",
+      image: "{{ '/images/learninggame/axiom.png' | relative_url }}",
+      trait: "Advanced Commercial Design",
+      description: "Modern next-gen suit technology"
     },
-    { 
-        name: "Gemini G4c Space Suit", 
-        icon: "🔧",
-        image: "{{ '/images/learninggame/gemini.png' | relative_url }}", // Add character image path
-        trait: "Classic NASA Engineering",
-        description: "Proven reliability and durability"
+    {
+      name: "Gemini G4c Space Suit",
+      image: "{{ '/images/learninggame/gemini.png' | relative_url }}",
+      trait: "Classic NASA Engineering",
+      description: "Proven reliability and durability"
     },
-    { 
-        name: "Orlan Space Suit", 
-        icon: "🧪",
-        image: "{{ '/images/learninggame/orlan.png' | relative_url }}", // Add character image path
-        trait: "Modular Russian Design",
-        description: "Flexible and adaptable systems"
+    {
+      name: "Orlan Space Suit",
+      image: "{{ '/images/learninggame/orlan.png' | relative_url }}",
+      trait: "Modular Russian Design",
+      description: "Flexible and adaptable systems"
     },
-    { 
-        name: "Feitian Space Suit", 
-        icon: "⚡",
-        image: "{{ '/images/learninggame/feitian.png' | relative_url }}", // Add character image path
-        trait: "Advanced Chinese Technology",
-        description: "Cutting-edge innovation"
+    {
+      name: "Feitian Space Suit",
+      image: "{{ '/images/learninggame/feitian.png' | relative_url }}",
+      trait: "Advanced Chinese Technology",
+      description: "Cutting-edge innovation"
     }
-];
+  ];
 
-let selectedCharacter = null;
+  let selectedCharacter = null;
 
-// ITERATION: Loop through characters and render them
-function renderCharacters() {
+  function renderCharacters() {
     const grid = document.getElementById('character-grid');
-    
+    grid.innerHTML = '';
+
     characters.forEach((character) => {
-        const card = document.createElement('div');
-        card.className = 'character-card';
-        card.style.cssText = `
-            background: rgba(15, 23, 42, 0.7);
-            border: 2px solid rgba(6, 182, 212, 0.3);
-            border-radius: 12px;
-            padding: 20px;
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            position: relative;
-        `;
-        
-        card.innerHTML = `
-            <img src="${character.image}" alt="${character.name}" style="width: 100%; height: 200px; object-fit: contain; border-radius: 8px; margin-bottom: 15px;">
-            <h3 style="color: #06b6d4; margin: 10px 0; font-size: 18px;">${character.name}</h3>
-            <p style="color: #fbbf24; font-size: 12px; font-weight: bold; margin-bottom: 8px;">${character.trait}</p>
-            <p style="color: #cbd5e1; font-size: 13px; margin: 0;">${character.description}</p>
-        `;
-        
-        card.addEventListener('mouseover', function() {
-            this.style.borderColor = 'rgba(251, 191, 36, 0.6)';
-            this.style.boxShadow = '0 0 20px rgba(251, 191, 36, 0.3)';
-            this.style.transform = 'translateY(-5px)';
-        });
-        
-        card.addEventListener('mouseout', function() {
-            if (selectedCharacter !== character.name) {
-                this.style.borderColor = 'rgba(6, 182, 212, 0.3)';
-                this.style.boxShadow = 'none';
-                this.style.transform = 'translateY(0)';
-            }
-        });
-        
-        card.addEventListener('click', function() {
-            // SELECTION: Handle character selection
-            selectCharacter(character.name, card);
-        });
-        
-        grid.appendChild(card);
-    });
-}
+      const card = document.createElement('div');
+      card.className = 'character-card';
 
-// INPUT: Handle character selection
-function selectCharacter(characterName, cardElement) {
-    // Deselect previous selection
-    const allCards = document.querySelectorAll('.character-card');
-    allCards.forEach(card => {
-        card.style.borderColor = 'rgba(6, 182, 212, 0.3)';
-        card.style.boxShadow = 'none';
-        card.style.backgroundColor = 'rgba(15, 23, 42, 0.7)';
-    });
-    
-    // Select current character
-    selectedCharacter = characterName;
-    cardElement.style.borderColor = '#06b6d4';
-    cardElement.style.boxShadow = '0 0 30px rgba(6, 182, 212, 0.6)';
-    cardElement.style.backgroundColor = 'rgba(6, 182, 212, 0.1)';
-}
+      card.innerHTML = `
+        <img class="character-img" src="${character.image}" alt="${character.name}">
+        <div class="character-name">${character.name}</div>
+        <div class="character-trait">${character.trait}</div>
+        <div class="character-desc">${character.description}</div>
+      `;
 
-// OUTPUT: Submit character selection
-document.getElementById('submit-btn').addEventListener('click', function() {
+      card.addEventListener('click', function() {
+        selectCharacter(character.name);
+      });
+
+      grid.appendChild(card);
+    });
+
+    syncSelectedUI();
+  }
+
+  function selectCharacter(name) {
+    selectedCharacter = name;
+    syncSelectedUI();
+  }
+
+  function syncSelectedUI() {
+    const cards = document.querySelectorAll('.character-card');
+    cards.forEach((card, idx) => {
+      const isSelected = characters[idx].name === selectedCharacter;
+      card.classList.toggle('selected', isSelected);
+    });
+  }
+
+  document.getElementById('submit-btn').addEventListener('click', function() {
     const characterName = document.getElementById('character-name-input').value.trim();
     const errorMessage = document.getElementById('error-message');
-    
-    // SELECTION: Validate input
+
     if (!characterName) {
-        errorMessage.textContent = "⚠️ Please enter your character name!";
-        errorMessage.style.display = 'block';
-        return;
+      errorMessage.textContent = "⚠️ Please enter your cadet name.";
+      errorMessage.style.display = 'block';
+      return;
     }
-    
+
     if (!selectedCharacter) {
-        errorMessage.textContent = "⚠️ Please select a character class!";
-        errorMessage.style.display = 'block';
-        return;
+      errorMessage.textContent = "⚠️ Please select a suit class.";
+      errorMessage.style.display = 'block';
+      return;
     }
-    
+
     errorMessage.style.display = 'none';
-    
-    // Disable button during submission
+
     this.disabled = true;
     this.textContent = "Saving...";
-    
-    // Generate or retrieve player ID (stored in session/localStorage)
+
+    // Generate or retrieve player ID
     let playerId = localStorage.getItem('playerId');
     if (!playerId) {
-        playerId = 'player_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-        localStorage.setItem('playerId', playerId);
+      playerId = 'player_' + Date.now() + '_' + Math.random().toString(36).slice(2, 11);
+      localStorage.setItem('playerId', playerId);
     }
-    
-    // I/O: Send data to backend server
-fetch('http://127.0.0.1:8320/api/update_character', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    credentials: 'include',
-    body: JSON.stringify({
+
+    fetch('http://127.0.0.1:8320/api/update_character', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({
         name: characterName,
         class: selectedCharacter
+      })
     })
-})
-    .then(response => response.json())
+    .then(res => res.json())
     .then(data => {
-        if (data.success) {
-            console.log('Character saved:', data.player);
-            // Show success and redirect
-            this.textContent = "✓ Profile Created!";
-            this.style.background = 'linear-gradient(135deg, #10b981, #059669)';
-            
-            setTimeout(() => {
-                window.location.href = "{{ '/learninggame/home' | relative_url }}";
-            }, 1500);
-        } else {
-            throw new Error(data.error || 'Failed to save character');
-        }
-    })
-    .catch(error => {
-        console.error('Error saving character:', error);
-        errorMessage.textContent = "❌ Failed to save character: " + error.message;
-        errorMessage.style.display = 'block';
-        this.disabled = false;
-        this.textContent = "Ready to Enter Maze →";
-    });
-});
+      if (!data.success) throw new Error(data.error || 'Failed to save character');
 
-// Initialize on page load
-window.addEventListener('DOMContentLoaded', renderCharacters);
+      this.textContent = "✓ Profile Created!";
+      this.style.background = 'linear-gradient(135deg, #10b981, #059669)';
+
+      setTimeout(() => {
+        window.location.href = "{{ '/learninggame/home' | relative_url }}";
+      }, 900);
+    })
+    .catch(err => {
+      errorMessage.textContent = "❌ Failed to save: " + err.message;
+      errorMessage.style.display = 'block';
+      this.disabled = false;
+      this.textContent = "Ready to Enter Maze →";
+    });
+  });
+
+  window.addEventListener('DOMContentLoaded', renderCharacters);
 </script>
