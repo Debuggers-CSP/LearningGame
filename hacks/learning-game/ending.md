@@ -1,6 +1,6 @@
 ---
 layout: base
-title: Maze - Ending Page
+title: Maze - Python Coding Challenge
 authors: Rishabh
 permalink: /learninggame/ending/
 disable_login_script: true
@@ -61,6 +61,14 @@ disable_login_script: true
       font-size: 14px;
       font-family: 'Courier New', monospace;
     }
+    .subtitle-list {
+      color: var(--text-muted);
+      font-size: 14px;
+      font-family: 'Courier New', monospace;
+      margin: 6px 0 0 18px;
+      padding: 0;
+      line-height: 1.5;
+    }
     .layout-grid {
       display: grid;
       grid-template-columns: 1.75fr 1fr;
@@ -109,6 +117,7 @@ disable_login_script: true
     .role-badges { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0 10px; }
     .role-badge { font-size: 11px; padding: 5px 9px; border-radius: 999px; border: 1px solid rgba(148, 163, 184, 0.35); background: rgba(30, 41, 59, 0.7); color: #e2e8f0; cursor: pointer; }
     .role-badge.active { border-color: rgba(16, 185, 129, 0.6); box-shadow: 0 0 10px rgba(16, 185, 129, 0.3); background: rgba(16, 185, 129, 0.2); color: #d1fae5; }
+    #debugLevelLabel { color: var(--primary); }
 
     .end-summary {
       width: min(1200px, 94vw);
@@ -124,7 +133,7 @@ disable_login_script: true
       justify-content: space-between;
       align-items: center;
       gap: 14px;
-      border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+      border-bottom: 1px solid rgba(16, 5, 165, 0.2);
       padding-bottom: 14px;
       margin-bottom: 16px;
     }
@@ -236,8 +245,15 @@ disable_login_script: true
   <div class="end-container">
     <div class="header">
       <div>
-        <div class="title">Maze - Ending Page</div>
-        <div class="subtitle">Action-Based Challenges + Debug Track</div>
+        <div class="title">Maze - Python Coding Challenge</div>
+        <ul class="subtitle-list">
+          <strong>Welcome to the last puzzle of the maze.! Follow the instructions below to play this game:</strong>
+          <li>Choose a debug level.</li>
+          <li>Click Start Challenge.</li>
+          <li>Paste the code to the Solution box and then fix the syntax error.</li>
+          <li>Use Help Chatbot if needed (Provides up to 3 hints).</li>
+          <li>Submit corrected code to earn a badge.</li>
+        </ul>
       </div>
     </div>
 
@@ -258,11 +274,11 @@ disable_login_script: true
         </div>
 
         <div class="card hero" id="debugChallengeCard">
-          <h3>Debug the Code (Your Level)</h3>
+          <h3>Debug the Code (<span id="debugLevelLabel">No level selected</span>)</h3>
           <div class="helper-text" id="debugProblemTitle">Select a level, then click Start Challenge to load your problem.</div>
           <pre class="code-block" id="debugCode">No problem loaded yet.</pre>
           <div class="helper-text" id="debugPrompt"></div>
-          <div class="helper-text">Paste corrected code only. Sentences will be rejected.</div>
+          <div class="helper-text">Paste the code above, fix the syntax error and submit the corrected code.</div>
           <div>
             <textarea id="debugAnswer" placeholder="Paste corrected code here..."></textarea>
             <div class="btn-row">
@@ -276,12 +292,12 @@ disable_login_script: true
 
       <div class="column">
         <div class="card">
-          <h3>💬 Hint Coach Chatbot</h3>
-          <p class="helper-text">ChatGPT provides 3 short hints first, then reveals the answer. If you paste code, it can run it in a sandbox and report output.</p>
-          <p class="helper-text">Guardrail: The answer is revealed only after 3 hints.</p>
+          <h3>❓ Help Chatbot</h3>
+          <p class="helper-text">Ask me the questions related to code syntax error ONLY</p>
+          <p class="helper-text">Note: The <strong>Answer</strong> is revealed after 3 hints.</p>
           <div class="chat-panel">
             <div class="chat-log" id="chatLog">
-              <div class="chat-bubble chat-ai">ChatGPT: Tell me the level and what you think the bug is.</div>
+              <div class="chat-bubble chat-ai"> Provide me the hint to fix the syntax error</div>
             </div>
             <div class="chat-input">
               <input id="chatInput" type="text" placeholder="Ask for help (e.g., 'Where is the bug?')" />
@@ -290,11 +306,6 @@ disable_login_script: true
           </div>
           </div>
 
-        <div class="card">
-          <h3>Action-Based Learning Focus</h3>
-          <p class="helper-text">Algorithms process actions in order, loop per action, use decisions, update results, and output the final result.</p>
-          <p class="helper-text">Use the debug panel to validate each step and earn badges as you go.</p>
-        </div>
       </div>
     </div>
   </div>
@@ -490,6 +501,7 @@ disable_login_script: true
       var debugProblemTitle = byId('debugProblemTitle');
       var debugCode = byId('debugCode');
       var debugPrompt = byId('debugPrompt');
+      var debugLevelLabel = byId('debugLevelLabel');
       var debugStatus = byId('debugStatus');
       var debugAnswer = byId('debugAnswer');
       var submitDebug = byId('submitDebug');
@@ -511,7 +523,7 @@ disable_login_script: true
         beginner: [
           {
             id: 'b1',
-            title: 'Beginner #1: Missing Colon',
+            title: 'Can you fix the syntax issue with the code below ? ',
             code: "def greet(name)\n    print('Hello ' + name)\n\ngreet('Ada')",
             prompt: 'Fix the syntax error and paste the corrected code.',
             expectedKeywords: ['colon', 'syntax', 'print', 'greet'],
@@ -527,7 +539,7 @@ disable_login_script: true
         intermediate: [
           {
             id: 'i1',
-            title: 'Intermediate #1: Off-by-One Loop',
+            title: 'Can you fix the syntax issue with the code below ?',
             code: "nums = [2, 4, 6, 8]\nfor i in range(0, len(nums)):\n    print(nums[i])\nprint('done')",
             prompt: 'The loop should skip the first item and print only 4, 6, 8. Paste corrected code.',
             expectedKeywords: ['range', 'start', 'index', 'loop', 'skip'],
@@ -543,7 +555,7 @@ disable_login_script: true
         hard: [
           {
             id: 'h1',
-            title: 'Hard #1: Guard the Empty List',
+            title: 'Can you fix the syntax issue with the code below ?',
             code: "def average(scores):\n    total = 0\n    for s in scores:\n        total += s\n    return total / len(scores)\n\nprint(average([]))",
             prompt: 'Handle the empty-list edge case and paste corrected code.',
             expectedKeywords: ['empty', 'len', 'zero', 'edge', 'return'],
@@ -579,6 +591,13 @@ disable_login_script: true
 
       function updateLevelStatus() {
         levelStatus.textContent = selectedDebugLevel ? ('Level: ' + selectedDebugLevel) : 'Level: not selected';
+        if (debugLevelLabel) {
+          if (selectedDebugLevel) {
+            debugLevelLabel.textContent = selectedDebugLevel.charAt(0).toUpperCase() + selectedDebugLevel.slice(1);
+          } else {
+            debugLevelLabel.textContent = 'No level selected';
+          }
+        }
         if (selectedDebugLevel) levelStatus.classList.add('active');
         else levelStatus.classList.remove('active');
         for (var i = 0; i < debugLevelButtons.length; i += 1) {
