@@ -1335,10 +1335,8 @@ permalink: /learninggame/home
       `${window.PSEUDOCODE_BANK_URL}/random?level=${encodeURIComponent(levelNum)}${exclude}&t=${t}`,
       {
         method: "GET",
-        cache: "no-store",
-        headers: {
-          "Cache-Control": "no-store"
-        }
+        cache: "no-store" // ✅ OK (does NOT add a forbidden header)
+        // ❌ remove headers: { "Cache-Control": "no-store" }
       }
     );
 
