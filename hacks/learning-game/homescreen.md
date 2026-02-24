@@ -704,24 +704,60 @@ permalink: /learninggame/home-ai
 </div>
 
 <script type="module">
-  // Config import safe fallback
+  // ======================================================
+  // ✅ FIX: pythonURI was being treated like a STRING,
+  // but your fallback sets it to a FUNCTION.
+  // That broke API_URL into "async ()=>.../api/robop".
+  // This block always resolves a real BASE URL string.
+  // ======================================================
+
   let pythonURI, fetchOptions;
+
   try {
-    const mod = await import('{{ "/assets/js/api/config.js" | relative_url }}?v=20260211_1');
+    const mod = await import('{{ "/assets/js/api/config.js" | relative_url }}?v=20260224_fix1');
     pythonURI = mod.pythonURI;
-    fetchOptions = mod.fetchOptions;
+    fetchOptions = mod.fetchOptions || {};
   } catch (e) {
-    console.warn("config.js import failed (fallback active):", e);
-    pythonURI = async () => "";
+    console.warn("config.js import failed (frontend will auto-detect backend):", e);
+    pythonURI = null;
     fetchOptions = {};
   }
 
-  const robopURI = (pythonURI) || "";
+  // ✅ Resolve backend base URL string
+  async function resolveBackendBase() {
+    // 1) config.js may export pythonURI as a string OR a function
+    try {
+      if (typeof pythonURI === "function") {
+        const val = await pythonURI();
+        if (val) return String(val).replace(/\/+$/, "");
+      }
+      if (typeof pythonURI === "string" && pythonURI.trim()) {
+        return pythonURI.trim().replace(/\/+$/, "");
+      }
+    } catch (e) {
+      console.warn("pythonURI resolver failed:", e);
+    }
 
+    // 2) Auto-detect local backend (MOST common dev setup)
+    // If your Flask server runs on a different port, change 8080 below.
+    const host = window.location.hostname || "127.0.0.1";
+    const guess = `http://${host}:8320`;
+    return guess.replace(/\/+$/, "");
+  }
+
+  const robopURI = await resolveBackendBase();
+
+  // Auth for robop endpoints (JWT cookie)
   const AUTH = {
     ...fetchOptions,
-    credentials: (fetchOptions && fetchOptions.credentials) ? fetchOptions.credentials : "include",
+    credentials: "include",
     mode: "cors"
+  };
+
+  // No-cookie options for pseudocode_bank endpoints (they don't need auth)
+  const NOAUTH = {
+    mode: "cors",
+    credentials: "omit"
   };
 
   const API_URL = `${robopURI}/api/robop`;
@@ -735,11 +771,13 @@ permalink: /learninggame/home-ai
     try { return new URL(u, window.location.origin).toString(); } catch { return u; }
   }
 
-  async function fetchJSON(url, options = {}) {
+  async function fetchJSON(url, options = {}, useAuth = true) {
     const finalUrl = prettyUrl(url);
+    const base = useAuth ? AUTH : NOAUTH;
+
     try {
       const res = await fetch(finalUrl, {
-        ...window.authOptions,
+        ...base,
         ...options,
         headers: {
           ...(options.headers || {}),
@@ -759,8 +797,7 @@ permalink: /learninggame/home-ai
     } catch (err) {
       const hint =
         `Network/CORS error calling:\n${finalUrl}\n\n` +
-        `If your site and backend are different domains/ports, you MUST enable CORS on the backend.\n` +
-        `Open DevTools → Network to see the blocked request.`;
+        `Check:\n- Is backend running at: ${robopURI} ?\n- DevTools → Network: is request blocked?\n`;
       err.message = `${err.message}\n\n${hint}`;
       throw err;
     }
@@ -854,7 +891,6 @@ permalink: /learninggame/home-ai
       await updateBackendBadges(id, s, m);
       animateBadgeToShelf(badgeIcons[m]);
       updateBadgeUI();
-      
     };
   }
 
@@ -879,19 +915,16 @@ permalink: /learninggame/home-ai
   }
 
   async function updateBackendBadges(id, s, m) {
+    const session = JSON.parse(localStorage.getItem("userSession") || "{}");
+    const userId = session.id;
+    if (!userId) {
+      console.warn("No user ID found in session.");
+      return;
+    }
 
-      const session = JSON.parse(localStorage.getItem("userSession") || "{}");
-      const userId = session.id; // This is the 'id' from the data.user object saved during login
-
-      if (!userId) {
-          console.warn("No user ID found in session.");
-          return;
-      }
-    try { 
+    try {
       await fetchJSON(`${robopURI}/api/robop/assign_badge`, {
         method: "POST",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           badge_name: id,
           sector_id: s,
@@ -899,7 +932,7 @@ permalink: /learninggame/home-ai
           attempts: moduleAttempts[m],
           used_autofill: usedAutofill
         })
-      });
+      }, true);
     } catch (e) {
       console.warn("Backend not ready: badge save skipped:", e.message);
     }
@@ -907,20 +940,16 @@ permalink: /learninggame/home-ai
 
   async function updateBadgeUI() {
     try {
-       // 1. Get the user object from local storage
       const session = JSON.parse(localStorage.getItem("userSession") || "{}");
-      const userId = session.id; // This is the 'id' from the data.user object saved during login
-
+      const userId = session.id;
       if (!userId) {
-          console.warn("No user ID found in session.");
-          return;
+        console.warn("No user ID found in session.");
+        return;
       }
-      // The ?t=${Date.now()} makes the URL unique every single time
-      // ✅ no user_id query param anymore
+
       const badges = await fetchJSON(`${robopURI}/api/robop/fetch_badges`, {
-        method: "GET",
-        credentials: "include"   // IMPORTANT so cookie is sent
-      });
+        method: "GET"
+      }, true);
 
       badgeShelf.innerHTML = '';
 
@@ -1018,7 +1047,7 @@ permalink: /learninggame/home-ai
           user_message: userMessage,
           conversation_history: conversationHistory
         })
-      });
+      }, true);
 
       if (!data.success) throw new Error(data.message || 'Failed to get AI response');
       return data.ai_response;
@@ -1250,7 +1279,7 @@ permalink: /learninggame/home-ai
     let rPos = [...level.start];
     let dir = 0;
 
-    updateRobotGrid(rPos, dir); 
+    updateRobotGrid(rPos, dir);
     const commands = [];
     const robot = {
       MoveForward: (n=1) => { for (let i=0; i<n; i++) commands.push('MOVE'); },
@@ -1292,7 +1321,7 @@ permalink: /learninggame/home-ai
       } else {
         feedback.style.color = "#fbbf24";
         feedback.textContent = "⚠️ Short of target. Try again.";
-        updateRobotGrid(level.start,0); 
+        updateRobotGrid(level.start,0);
       }
     } catch (e) {
       feedback.style.color = "#ef4444";
@@ -1331,16 +1360,18 @@ permalink: /learninggame/home-ai
     const lastQid = Number(localStorage.getItem("last_pseudo_qid") || "0");
     const exclude = lastQid > 0 ? `&exclude_id=${encodeURIComponent(lastQid)}` : "";
 
+    // ✅ IMPORTANT: pseudocode_bank endpoints do NOT need cookies
     const data = await fetchJSON(
       `${window.PSEUDOCODE_BANK_URL}/random?level=${encodeURIComponent(levelNum)}${exclude}&t=${t}`,
       {
         method: "GET",
-        cache: "no-store" // ✅ OK (does NOT add a forbidden header)
-        // ❌ remove headers: { "Cache-Control": "no-store" }
-      }
+        cache: "no-store"
+      },
+      false
     );
 
-    if (data && data.question_id != null) {
+    // backend returns { success: true, level, question, question_id }
+    if (data && data.success && data.question_id != null) {
       localStorage.setItem("last_pseudo_qid", String(data.question_id));
     }
 
@@ -1359,6 +1390,10 @@ permalink: /learninggame/home-ai
 
     try {
       const data = await fetchRandomPseudocodeQuestion(levelNum);
+
+      if (!data || data.success !== true) {
+        throw new Error(data?.message || "Failed to fetch question.");
+      }
 
       currentPseudo.level = data.level;
       currentPseudo.question_id = data.question_id;
@@ -1442,6 +1477,7 @@ ${err.message}
     feedback.textContent = "⏳ Checking your answer...";
 
     try {
+      // ✅ pseudocode_bank grading does NOT need cookies
       const data = await fetchJSON(`${window.PSEUDOCODE_BANK_URL}/grade`, {
         method: "POST",
         body: JSON.stringify({
@@ -1450,7 +1486,7 @@ ${err.message}
           pseudocode: code,
           use_ai: true
         })
-      });
+      }, false);
 
       if (!data.success) throw new Error(data.message || "Checker failed.");
 
@@ -1540,7 +1576,7 @@ ${err.message}
         const data = await fetchJSON(`${window.API_URL}/autofill`, {
           method: "POST",
           body: JSON.stringify({ sector_id: currentSectorNum, question_num: currentQuestion })
-        });
+        }, true);
 
         if (!data.success) throw new Error(data.message || "Autofill failed.");
 
@@ -1573,35 +1609,27 @@ ${err.message}
 
         let answer = null;
 
-        // 1) Try AI autofill (backend should accept POST)
+        // 1) Try AI autofill (pseudocode_bank)
         try {
           const ai = await fetchJSON(`${window.PSEUDOCODE_BANK_URL}/ai_autofill`, {
             method: "POST",
             body: JSON.stringify(payload)
-          });
+          }, false);
           if (ai && ai.success && ai.answer) answer = ai.answer;
         } catch (e) { answer = null; }
 
-        // 2) Fallback: use robop_api /autofill
+        // 2) Fallback: robop autofill
         if (!answer) {
           try {
             const plain = await fetchJSON(`${window.API_URL}/autofill`, {
               method: "POST",
               body: JSON.stringify(payload)
-            });
+            }, true);
             if (plain && plain.success && plain.answer) answer = plain.answer;
           } catch (e) { answer = null; }
         }
 
-        // 3) Last resort: try again
-        if (!answer) {
-          const fb = await fetchJSON(`${window.API_URL}/autofill`, {
-            method: "POST",
-            body: JSON.stringify(payload)
-          });
-          if (!fb.success || !fb.answer) throw new Error(fb.message || "Failed to autofill pseudocode.");
-          answer = fb.answer;
-        }
+        if (!answer) throw new Error("Failed to autofill pseudocode.");
 
         document.getElementById('pcCode').value = answer;
         feedback.textContent = '✨ Filled! Click "Generate + Check Answer" to grade.';
@@ -1708,17 +1736,9 @@ ${err.message}
     drawMaze();
   }
 
-  window.addEventListener('resize', () => {
-    requestAnimationFrame(hardRefreshUI);
-  });
-
-  window.addEventListener('pageshow', () => {
-    requestAnimationFrame(hardRefreshUI);
-  });
-
-  document.addEventListener('visibilitychange', () => {
-    if (!document.hidden) requestAnimationFrame(hardRefreshUI);
-  });
+  window.addEventListener('resize', () => requestAnimationFrame(hardRefreshUI));
+  window.addEventListener('pageshow', () => requestAnimationFrame(hardRefreshUI));
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) requestAnimationFrame(hardRefreshUI); });
 
   async function handleLogout() {
     try {
@@ -1732,16 +1752,21 @@ ${err.message}
     } catch (e) {
       console.warn("Backend logout failed, clearing locally:", e);
     }
-   
+
     localStorage.removeItem("userSession");
     window.location.href = '{{ site.baseurl }}/learninggame/login';
   }
 
   document.getElementById('logoutBtn').onclick = handleLogout;
+
   loadProgress();
   drawMaze();
   updateProgressBar();
   updateBotIconVisibility();
   updateBadgeUI();
   helpBotIcon.style.display = 'flex';
+
+  console.log("✅ Frontend connected. Backend base:", robopURI);
+  console.log("✅ API_URL:", API_URL);
+  console.log("✅ PSEUDOCODE_BANK_URL:", PSEUDOCODE_BANK_URL);
 </script>
