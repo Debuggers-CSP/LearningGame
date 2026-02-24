@@ -3,7 +3,7 @@ layout: opencs
 microblog: True
 title: Maze - AI Enhanced
 authors: Anika, Cyrus, Rishabh, Jaynee, Lillian, Avantika, Meryl
-permalink: /learninggame/home
+permalink: /learninggame/home-ai
 ---
 
 <style>
