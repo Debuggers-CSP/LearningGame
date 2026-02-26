@@ -1609,63 +1609,14 @@ ${err.message}
 
         let answer = null;
 
-        // ✅ BEST autofill priority:
-        // 1) Answer bank (instant, deterministic)
-        // 2) AI autofill (fallback)
-        // 3) robop autofill (last fallback)
-
-        let answer = null;
-
-        // 1) Answer bank (GET, no cookies)
+        // 1) Try AI autofill (pseudocode_bank)
         try {
-          const bank = await fetchJSON(
-            `${window.PSEUDOCODE_BANK_URL}/autofill?question_id=${encodeURIComponent(currentPseudo.question_id)}`,
-            { method: "GET", cache: "no-store" },
-            false
-          );
-          if (bank && bank.success && bank.answer) answer = bank.answer;
-        } catch (e) {
-          answer = null;
-        }
-
-        // 2) AI autofill (POST, no cookies)
-        if (!answer) {
-          try {
-            const ai = await fetchJSON(`${window.PSEUDOCODE_BANK_URL}/ai_autofill`, {
-              method: "POST",
-              body: JSON.stringify({
-                question_id: currentPseudo.question_id,
-                level: currentPseudo.level
-              })
-            }, false);
-            if (ai && ai.success && ai.answer) answer = ai.answer;
-          } catch (e) {
-            answer = null;
-          }
-        }
-
-        // 3) robop autofill fallback (POST, cookies)
-        if (!answer) {
-          try {
-            const plain = await fetchJSON(`${window.API_URL}/autofill`, {
-              method: "POST",
-              body: JSON.stringify({
-                question_id: currentPseudo.question_id,
-                level: currentPseudo.level
-              })
-            }, true);
-            if (plain && plain.success && plain.answer) answer = plain.answer;
-          } catch (e) {
-            answer = null;
-          }
-        }
-
-        if (!answer) throw new Error("Failed to autofill pseudocode.");
-
-        document.getElementById('pcCode').value = answer;
-        feedback.textContent = '✨ Filled! Click "Generate + Check Answer" to grade.';
-        feedback.style.color = '#a855f7';
-        return;
+          const ai = await fetchJSON(`${window.PSEUDOCODE_BANK_URL}/ai_autofill`, {
+            method: "POST",
+            body: JSON.stringify(payload)
+          }, false);
+          if (ai && ai.success && ai.answer) answer = ai.answer;
+        } catch (e) { answer = null; }
 
         // 2) Fallback: robop autofill
         if (!answer) {
