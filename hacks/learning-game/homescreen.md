@@ -1265,14 +1265,10 @@ async function showQuestion() {
 
   resetChatForNewQuestion();
 
-  mContent.innerHTML = '';
-  
   if (currentQuestion === 0) renderRobotSim();
   else if (currentQuestion === 1) await renderPseudoCode();
   else renderMCQ();
 
-  hintOverlay.classList.remove('active');
-  
   nextBtn.style.display = currentQuestion < 2 ? 'block' : 'none';
   autofillBtn.style.display = currentQuestion < 2 ? 'block' : 'none';
   backBtn.style.display = currentQuestion === 2 ? 'block' : 'none';
@@ -1286,14 +1282,10 @@ function renderRobotSim() {
       <p style="color: #e2e8f0; margin-bottom: 10px; font-size: 14px;">Program the robot. Reach ⭐. Avoid 🟥.</p>
       <div class="robot-grid" id="rg"></div>
       <textarea id="rcInput">robot.MoveForward();</textarea>
-      <div style="display: flex; gap: 10px; margin-top: 10px;">
-        <button class="btn btn-check" id="runSimBtn" style="flex: 2;">Execute Command</button>
-        <button class="btn" id="aiFillBtn" style="flex: 1; background: #8b5cf6; color: white;">🤖 AI Fill</button>
-      </div>
+      <button class="btn btn-check" id="runSimBtn">Execute Command</button>
     </div>
   `;
   document.getElementById('runSimBtn').onclick = runRobotSim;
-  document.getElementById('aiFillBtn').onclick = aiFillAnswer;
   updateRobotGrid(level.start, 0);
 }
 
