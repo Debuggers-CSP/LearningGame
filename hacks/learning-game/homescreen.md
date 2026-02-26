@@ -1447,7 +1447,7 @@ ${err.message}
           question_id: currentPseudo.question_id,
           level: currentPseudo.level,
           pseudocode: code,
-          use_ai: true
+          use_ai: false
         })
       }, false);
 
