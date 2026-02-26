@@ -9,15 +9,6 @@ permalink: /learninggame/home
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
 
-  /* =========================================================
-     ✅ FIX: Progress bar + maze "disappearing"
-     Root cause is almost always one of these:
-     1) Parent layout creates a new stacking context or overlay covers your app
-     2) Flex + overflow + min-height collapse causes children to render at 0 height
-     3) Maze renders while width is 0, so it looks gone until reflow
-     This patch hardens stacking + sizing and forces redraw on resize/pageshow.
-     ========================================================= */
-
   body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     background: linear-gradient(135deg, #020617 0%, #0f172a 50%, #1e1b4b 100%);
@@ -55,7 +46,6 @@ permalink: /learninggame/home
     transform: translateY(-2px);
   }
 
-  /* Background layers: keep them BEHIND the app no matter what */
   .stars { position: fixed; inset: 0; overflow: hidden; z-index: 0; pointer-events: none; }
   .star { position: absolute; width: 2px; height: 2px; background: white; border-radius: 50%; animation: twinkle 3s infinite; }
   @keyframes twinkle { 0%, 100% { opacity: 0.3; } 50% { opacity: 1; } }
@@ -79,7 +69,6 @@ permalink: /learninggame/home
     pointer-events: none;
   }
 
-  /* App wrapper is always ABOVE background layers */
   .learninggame-root{
     width: 100%;
     display: flex;
@@ -124,7 +113,6 @@ permalink: /learninggame/home
   .title { color: #06b6d4; font-size: 24px; font-weight: 900; text-transform: uppercase; letter-spacing: 4px; }
   .subtitle { text-align: center; color: rgba(103,232,249,0.7); font-size: 12px; font-family: 'Courier New', monospace; }
 
-  /* ✅ HARDEN SCROLL AREA */
   .scroll-area {
     flex: 1;
     min-height: 0;
@@ -251,7 +239,6 @@ permalink: /learninggame/home
     padding: 14px 18px 18px 18px;
   }
 
-  /* ✅ HARDEN MAZE SIZE */
   .maze {
     width: 100%;
     max-width: 820px;
@@ -400,7 +387,7 @@ permalink: /learninggame/home
   @keyframes pulse {
     0% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7); }
     70% { box-shadow: 0 0 0 15px rgba(59, 130, 246, 0); }
-    100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7); }
   }
 
   #hint-overlay {
@@ -541,9 +528,8 @@ permalink: /learninggame/home
   .chat-messages::-webkit-scrollbar-thumb:hover,
   .hint-content-wrapper::-webkit-scrollbar-thumb:hover { background: rgba(59, 130, 246, 0.7); }
 
-  /* Keep your internal centering inside the app */
   .progress-bar-container,
-  .maze-container{  
+  .maze-container{
     width: 100%;
     max-width: 820px;
     margin-inline: auto !important;
@@ -704,13 +690,6 @@ permalink: /learninggame/home
 </div>
 
 <script type="module">
-  // ======================================================
-  // ✅ FIX: pythonURI was being treated like a STRING,
-  // but your fallback sets it to a FUNCTION.
-  // That broke API_URL into "async ()=>.../api/robop".
-  // This block always resolves a real BASE URL string.
-  // ======================================================
-
   let pythonURI, fetchOptions;
 
   try {
@@ -723,9 +702,7 @@ permalink: /learninggame/home
     fetchOptions = {};
   }
 
-  // ✅ Resolve backend base URL string
   async function resolveBackendBase() {
-    // 1) config.js may export pythonURI as a string OR a function
     try {
       if (typeof pythonURI === "function") {
         const val = await pythonURI();
@@ -737,9 +714,6 @@ permalink: /learninggame/home
     } catch (e) {
       console.warn("pythonURI resolver failed:", e);
     }
-
-    // 2) Auto-detect local backend (MOST common dev setup)
-    // If your Flask server runs on a different port, change 8080 below.
     const host = window.location.hostname || "127.0.0.1";
     const guess = `http://${host}:8320`;
     return guess.replace(/\/+$/, "");
@@ -747,14 +721,12 @@ permalink: /learninggame/home
 
   const robopURI = await resolveBackendBase();
 
-  // Auth for robop endpoints (JWT cookie)
   const AUTH = {
     ...fetchOptions,
     credentials: "include",
     mode: "cors"
   };
 
-  // No-cookie options for pseudocode_bank endpoints (they don't need auth)
   const NOAUTH = {
     mode: "cors",
     credentials: "omit"
@@ -996,7 +968,7 @@ permalink: /learninggame/home
     }
   }
 
-  const teacherData = {
+  const teacherData = { /* unchanged for brevity in behavior */ 
     1: { title: "Stop 1: Training",
       msg: "Robot code is a pseudocode-style language with four commands—MOVE_FORWARD(), ROTATE_LEFT(), ROTATE_RIGHT(), and CAN_MOVE(direction)—used to control a robot through a maze. Pseudocode: Use plain-language, step-by-step logic (variables, conditionals, loops, and logical flow) to describe how your algorithm should work before worrying about strict programming syntax. Computational thinking: break the problem into small rules, test your logic, and iterate based on what you observe.",
       hints: [
@@ -1351,26 +1323,18 @@ permalink: /learninggame/home
     }
   }
 
-  // ============================
-  // ✅ PSEUDOCODE RANDOMIZER FIX
-  // ============================
   async function fetchRandomPseudocodeQuestion(levelNum) {
     const t = Date.now();
 
     const lastQid = Number(localStorage.getItem("last_pseudo_qid") || "0");
     const exclude = lastQid > 0 ? `&exclude_id=${encodeURIComponent(lastQid)}` : "";
 
-    // ✅ IMPORTANT: pseudocode_bank endpoints do NOT need cookies
     const data = await fetchJSON(
       `${window.PSEUDOCODE_BANK_URL}/random?level=${encodeURIComponent(levelNum)}${exclude}&t=${t}`,
-      {
-        method: "GET",
-        cache: "no-store"
-      },
+      { method: "GET", cache: "no-store" },
       false
     );
 
-    // backend returns { success: true, level, question, question_id }
     if (data && data.success && data.question_id != null) {
       localStorage.setItem("last_pseudo_qid", String(data.question_id));
     }
@@ -1477,7 +1441,6 @@ ${err.message}
     feedback.textContent = "⏳ Checking your answer...";
 
     try {
-      // ✅ pseudocode_bank grading does NOT need cookies
       const data = await fetchJSON(`${window.PSEUDOCODE_BANK_URL}/grade`, {
         method: "POST",
         body: JSON.stringify({
@@ -1494,7 +1457,7 @@ ${err.message}
 
       if (data.passed) {
         feedback.style.color = "#10b981";
-        feedback.textContent = "✅ Correct (AI graded).";
+        feedback.textContent = "✅ Correct (Answer-key graded).";
         if (outputBox) {
           const improved = (data.improved_pseudocode || "").trim();
           const fb = (data.feedback || "").trim();
@@ -1509,14 +1472,12 @@ ${err.message}
         awardBadge(currentSectorNum, 1);
       } else {
         feedback.style.color = "#fbbf24";
-        feedback.textContent = "⚠️ Not quite (AI graded). Fix the missing parts and try again.";
+        feedback.textContent = "⚠️ Not quite. Compare to the example solution and try again.";
         if (outputBox) {
-          const missingList = (data.missing || []).map(m => `- ${m}`).join("\n");
           const improved = (data.improved_pseudocode || "").trim();
           const fb = (data.feedback || "").trim();
           outputBox.textContent =
-            `FAIL ❌\n` +
-            (missingList ? `Missing:\n${missingList}\n\n` : "") +
+            `FAIL ❌\n\n` +
             (fb ? `How to fix:\n${fb}\n\n` : "") +
             (improved ? `Example Passing Solution:\n${improved}\n` : "");
         }
@@ -1566,6 +1527,7 @@ ${err.message}
     });
   }
 
+  // ✅ UPDATED: pseudocode autofill now comes from DB answer bank by question_id
   autofillBtn.onclick = async () => {
     try {
       usedAutofill = true;
@@ -1601,38 +1563,19 @@ ${err.message}
           return;
         }
 
-        const payload = {
-          question_id: currentPseudo.question_id,
-          level: currentPseudo.level,
-          prompt: currentPseudo.question
-        };
+        const url =
+          `${window.PSEUDOCODE_BANK_URL}/autofill` +
+          `?question_id=${encodeURIComponent(currentPseudo.question_id)}` +
+          `&level=${encodeURIComponent(currentPseudo.level || "")}`;
 
-        let answer = null;
+        const data = await fetchJSON(url, { method: "GET", cache: "no-store" }, false);
 
-        // 1) Try AI autofill (pseudocode_bank)
-        try {
-          const ai = await fetchJSON(`${window.PSEUDOCODE_BANK_URL}/ai_autofill`, {
-            method: "POST",
-            body: JSON.stringify(payload)
-          }, false);
-          if (ai && ai.success && ai.answer) answer = ai.answer;
-        } catch (e) { answer = null; }
-
-        // 2) Fallback: robop autofill
-        if (!answer) {
-          try {
-            const plain = await fetchJSON(`${window.API_URL}/autofill`, {
-              method: "POST",
-              body: JSON.stringify(payload)
-            }, true);
-            if (plain && plain.success && plain.answer) answer = plain.answer;
-          } catch (e) { answer = null; }
+        if (!data || data.success !== true || !data.answer) {
+          throw new Error(data?.message || "No saved answer found for this question.");
         }
 
-        if (!answer) throw new Error("Failed to autofill pseudocode.");
-
-        document.getElementById('pcCode').value = answer;
-        feedback.textContent = '✨ Filled! Click "Generate + Check Answer" to grade.';
+        document.getElementById('pcCode').value = data.answer;
+        feedback.textContent = '✨ Autofilled from answer bank! Click "Generate + Check Answer" to grade.';
         feedback.style.color = '#a855f7';
         return;
       }
