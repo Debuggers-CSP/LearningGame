@@ -272,16 +272,19 @@ permalink: /learninggame/home
   .wall { background: linear-gradient(135deg, #1e293b 0%, #334155 100%); }
   .path { background: rgba(30, 41, 59, 0.3); }
 
-  .player {
-    background: radial-gradient(circle, #06b6d4 0%, #3b82f6 100%);
-    border-radius: 50%;
-    box-shadow: 0 0 20px rgba(6,182,212,0.8);
-    width: 80%;
-    height: 80%;
-    margin: 10%;
-    z-index: 20;
-    position: absolute;
-  }
+.player {
+  background: radial-gradient(circle, #06b6d4 0%, #3b82f6 100%);
+  border-radius: 50%;
+  box-shadow: 0 0 20px rgba(6,182,212,0.8);
+  width: 80%;
+  height: 80%;
+  margin: 10%;
+  z-index: 20;
+  position: absolute;
+  display: block !important;  /* 添加这一行强制显示 */
+  opacity: 1 !important;      /* 添加这一行确保不透明 */
+  visibility: visible !important; /* 添加这一行确保可见 */
+}
 
   .sector {
     background: linear-gradient(135deg, rgba(251,191,36,0.3) 0%, rgba(217,119,6,0.3) 100%);
@@ -1750,16 +1753,5 @@ ${err.message}
   console.log("✅ Frontend connected. Backend base:", robopURI);
   console.log("✅ API_URL:", API_URL);
   console.log("✅ PSEUDOCODE_BANK_URL:", PSEUDOCODE_BANK_URL);
-
-  .cell .player {
-  display: block !important;
-  opacity: 1 !important;
-  visibility: visible !important;
-  background: radial-gradient(circle, #06b6d4 0%, #3b82f6 100%) !important;
-  width: 80% !important;
-  height: 80% !important;
-  border-radius: 50% !important;
-  box-shadow: 0 0 20px rgba(6,182,212,0.8) !important;
-}
 </script>
 
