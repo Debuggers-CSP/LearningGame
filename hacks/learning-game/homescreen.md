@@ -305,25 +305,6 @@ permalink: /learninggame/home
     font-family: 'Courier New', monospace;
   }
 
-  /* 修复右下角机器人按钮 */
-  #help-bot-icon {
-    position: fixed;
-    bottom: 30px;
-    right: 30px;
-    width: 60px;
-    height: 60px;
-    background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 28px;
-    cursor: pointer;
-    box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
-    z-index: 999;
-    transition: all 0.3s ease;
-    border: 2px solid rgba(255, 255, 255, 0.2);
-  }
 
 .maze .cell {
   position: relative;
@@ -403,23 +384,7 @@ permalink: /learninggame/home
   .summary-card { text-align: left; color: #e2e8f0; }
   .summary-row { display: flex; justify-content: space-between; margin: 10px 0; border-bottom: 1px solid rgba(148,163,184,0.1); padding-bottom: 5px; }
 
-  #help-bot-icon {
-    position: fixed;
-    bottom: 30px;
-    right: 30px;
-    width: 60px; height: 60px;
-    background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 28px;
-    cursor: pointer;
-    box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
-    z-index: 999;
-    transition: all 0.3s ease;
-    border: 2px solid rgba(255, 255, 255, 0.2);
-  }
+
   #help-bot-icon:hover { transform: scale(1.1); box-shadow: 0 8px 25px rgba(59, 130, 246, 0.6); }
   #help-bot-icon.pulsing { animation: pulse 2s infinite; }
 
