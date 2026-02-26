@@ -324,7 +324,7 @@ permalink: /learninggame/home
     transition: all 0.3s ease;
     border: 2px solid rgba(255, 255, 255, 0.2);
   }
-  
+
 .maze .cell {
   position: relative;
 }
@@ -671,7 +671,7 @@ permalink: /learninggame/home
   </div>
 </div>
 
-<div id="help-bot-icon">🤖</div>
+<div id="help-bot-icon" style="position: fixed; bottom: 30px; right: 30px; width: 60px; height: 60px; background: linear-gradient(135deg, #3b82f6, #1d4ed8); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 28px; cursor: pointer; z-index: 9999; border: 2px solid rgba(255,255,255,0.2); box-shadow: 0 6px 20px rgba(59,130,246,0.4);">🤖</div>
 
 <div id="hint-overlay">
   <div class="close-btn" id="closeAiBtn">✕</div>
