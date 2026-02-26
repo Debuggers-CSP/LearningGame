@@ -1270,7 +1270,7 @@ async function showQuestion() {
 
   hintOverlay.classList.remove('active');
   
-  nextBtn.style.display = currentQuestion < 2 s? 'block' : 'none';
+  nextBtn.style.display = currentQuestion < 2 ? 'block' : 'none';
   autofillBtn.style.display = currentQuestion < 2 ? 'block' : 'none';
   backBtn.style.display = currentQuestion === 2 ? 'block' : 'none';
   updateBotIconVisibility();
