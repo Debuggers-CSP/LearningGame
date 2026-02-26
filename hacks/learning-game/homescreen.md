@@ -305,6 +305,22 @@ permalink: /learninggame/home
     font-family: 'Courier New', monospace;
   }
 
+.maze .cell {
+  position: relative;
+}
+
+.maze .cell .player {
+  position: absolute;
+  top: 10%;
+  left: 10%;
+  width: 80%;
+  height: 80%;
+  background: radial-gradient(circle, #06b6d4, #3b82f6);
+  border-radius: 50%;
+  box-shadow: 0 0 15px #06b6d4;
+  z-index: 5;
+}
+
   .question-modal {
     display: none;
     position: fixed;
@@ -1753,5 +1769,6 @@ ${err.message}
   console.log("✅ Frontend connected. Backend base:", robopURI);
   console.log("✅ API_URL:", API_URL);
   console.log("✅ PSEUDOCODE_BANK_URL:", PSEUDOCODE_BANK_URL);
+  
 </script>
 
