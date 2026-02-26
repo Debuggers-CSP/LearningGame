@@ -343,17 +343,20 @@ permalink: /learninggame/home
     position: relative;
   }
 
-  .robot-grid {
-    display: grid;
-    grid-template-columns: repeat(5, 45px);
-    grid-template-rows: repeat(5, 45px);
-    gap: 4px;
-    background: #0f172a;
-    padding: 10px;
-    border-radius: 8px;
-    margin: 10px auto;
-    justify-content: center;
-  }
+.robot-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 45px);
+  grid-template-rows: repeat(5, 45px);
+  gap: 4px;
+  background: #0f172a;
+  padding: 10px;
+  border-radius: 8px;
+  margin: 10px auto;
+  justify-content: center;
+  width: fit-content;  /* 添加这一行 */
+  height: fit-content; /* 添加这一行 */
+}
+
   .r-cell {
     width: 45px; height: 45px;
     background: rgba(30, 41, 59, 0.5);
