@@ -1750,4 +1750,16 @@ ${err.message}
   console.log("✅ Frontend connected. Backend base:", robopURI);
   console.log("✅ API_URL:", API_URL);
   console.log("✅ PSEUDOCODE_BANK_URL:", PSEUDOCODE_BANK_URL);
+
+  .cell .player {
+  display: block !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  background: radial-gradient(circle, #06b6d4 0%, #3b82f6 100%) !important;
+  width: 80% !important;
+  height: 80% !important;
+  border-radius: 50% !important;
+  box-shadow: 0 0 20px rgba(6,182,212,0.8) !important;
+}
 </script>
+
