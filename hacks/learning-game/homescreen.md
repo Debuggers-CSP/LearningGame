@@ -1010,24 +1010,62 @@ permalink: /learninggame/home
   let conversationHistory = [];
 
   async function sendMessageToAI(userMessage) {
-    try {
-      const data = await fetchJSON(`${API_URL}/ai_chat`, {
-        method: "POST",
-        body: JSON.stringify({
-          sector_id: currentSectorNum,
-          question_num: currentQuestion,
-          user_message: userMessage,
-          conversation_history: conversationHistory
-        })
-      }, true);
-
-      if (!data.success) throw new Error(data.message || 'Failed to get AI response');
-      return data.ai_response;
-    } catch (error) {
-      console.error('AI Chat Error:', error);
-      return "Sorry, I'm having trouble connecting right now. Try again, or use the hint steps above.";
+  try {
+    // ✅ 收集当前题目的详细信息
+    const questionDetails = {};
+    
+    if (currentQuestion === 0) {
+      // Robot Simulation 题目
+      const level = robotLevels[currentSectorNum];
+      questionDetails.type = "robot_simulation";
+      questionDetails.description = "Program the robot. Reach ⭐. Avoid 🟥.";
+      questionDetails.start_pos = level.start;
+      questionDetails.goal_pos = level.goal;
+      questionDetails.walls = level.walls;
+      questionDetails.grid_size = [5, 5];
+      questionDetails.current_code = document.getElementById('rcInput')?.value || "";
+    } 
+    else if (currentQuestion === 1) {
+      // Pseudocode 题目
+      questionDetails.type = "pseudocode";
+      questionDetails.question_text = currentPseudo.question || "";
+      questionDetails.level = currentPseudo.level || "";
+      questionDetails.question_id = currentPseudo.question_id || "";
+      questionDetails.current_code = document.getElementById('pcCode')?.value || "";
+    } 
+    else if (currentQuestion === 2) {
+      // MCQ 题目
+      const mcqs = [
+        {q:"What is 1101 in binary?", a:["13","11"], c:0},
+        {q:"What is AND logic?", a:["Both true","One true"], c:0},
+        {q:"What is Abstraction?", a:["Hide detail","Show all"], c:0},
+        {q:"What is IP Protocol?", a:["Routing","Website"], c:0},
+        {q:"What are Heuristics?", a:["Rule of thumb","Perfect solution"], c:0}
+      ];
+      const mcq = mcqs[currentSectorNum - 1];
+      questionDetails.type = "mcq";
+      questionDetails.question = mcq.q;
+      questionDetails.options = mcq.a;
     }
+
+    const data = await fetchJSON(`${API_URL}/ai_chat`, {
+      method: "POST",
+      body: JSON.stringify({
+        sector_id: currentSectorNum,
+        question_num: currentQuestion,
+        user_message: userMessage,
+        conversation_history: conversationHistory,
+        question_details: questionDetails  // ✅ 新增：发送题目详情
+      })
+    });
+
+    if (!data.success) throw new Error(data.message || 'Failed to get AI response');
+    return data.ai_response;
+  } catch (error) {
+    console.error('AI Chat Error:', error);
+    return "Sorry, I'm having trouble connecting right now. Try again, or use the hint steps above.";
   }
+}
 
   function addChatMessage(content, isAI = true) {
     const messageDiv = document.createElement('div');
