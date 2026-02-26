@@ -281,9 +281,9 @@ permalink: /learninggame/home
   margin: 10%;
   z-index: 20;
   position: absolute;
-  display: block !important;  /* 添加这一行强制显示 */
-  opacity: 1 !important;      /* 添加这一行确保不透明 */
-  visibility: visible !important; /* 添加这一行确保可见 */
+  display: block ;  
+  opacity: 1 ;       
+  visibility: visible ; 
 }
 
   .sector {
