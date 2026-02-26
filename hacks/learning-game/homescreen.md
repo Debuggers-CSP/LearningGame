@@ -1262,14 +1262,15 @@ async function showQuestion() {
 
   resetChatForNewQuestion();
 
-
   mContent.innerHTML = '';
   
   if (currentQuestion === 0) renderRobotSim();
   else if (currentQuestion === 1) await renderPseudoCode();
   else renderMCQ();
 
-  nextBtn.style.display = currentQuestion < 2 ? 'block' : 'none';
+  hintOverlay.classList.remove('active');
+  
+  nextBtn.style.display = currentQuestion < 2 s? 'block' : 'none';
   autofillBtn.style.display = currentQuestion < 2 ? 'block' : 'none';
   backBtn.style.display = currentQuestion === 2 ? 'block' : 'none';
   updateBotIconVisibility();
