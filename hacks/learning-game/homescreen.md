@@ -1272,7 +1272,7 @@ permalink: /learninggame/home
     updateBotIconVisibility();
   }
 
-  function renderRobotSim() {
+function renderRobotSim() {
   const level = robotLevels[currentSectorNum];
   mContent.innerHTML = `
     <div class="robot-sim-container">
