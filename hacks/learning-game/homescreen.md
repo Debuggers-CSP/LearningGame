@@ -1253,24 +1253,27 @@ permalink: /learninggame/home
     });
   }
 
-  async function showQuestion() {
-    document.getElementById('sectorBadge').textContent = currentSectorNum;
-    document.getElementById('mTitle').textContent = `Sector ${currentSectorNum}`;
-    feedback.textContent = '';
-    nextBtn.disabled = true;
-    nextBtn.style.opacity = "0.5";
+async function showQuestion() {
+  document.getElementById('sectorBadge').textContent = currentSectorNum;
+  document.getElementById('mTitle').textContent = `Sector ${currentSectorNum}`;
+  feedback.textContent = '';
+  nextBtn.disabled = true;
+  nextBtn.style.opacity = "0.5";
 
-    resetChatForNewQuestion();
+  resetChatForNewQuestion();
 
-    if (currentQuestion === 0) renderRobotSim();
-    else if (currentQuestion === 1) await renderPseudoCode();
-    else renderMCQ();
 
-    nextBtn.style.display = currentQuestion < 2 ? 'block' : 'none';
-    autofillBtn.style.display = currentQuestion < 2 ? 'block' : 'none';
-    backBtn.style.display = currentQuestion === 2 ? 'block' : 'none';
-    updateBotIconVisibility();
-  }
+  mContent.innerHTML = '';
+  
+  if (currentQuestion === 0) renderRobotSim();
+  else if (currentQuestion === 1) await renderPseudoCode();
+  else renderMCQ();
+
+  nextBtn.style.display = currentQuestion < 2 ? 'block' : 'none';
+  autofillBtn.style.display = currentQuestion < 2 ? 'block' : 'none';
+  backBtn.style.display = currentQuestion === 2 ? 'block' : 'none';
+  updateBotIconVisibility();
+}
 
 function renderRobotSim() {
   const level = robotLevels[currentSectorNum];
