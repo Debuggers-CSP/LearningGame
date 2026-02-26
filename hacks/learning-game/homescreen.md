@@ -305,6 +305,26 @@ permalink: /learninggame/home
     font-family: 'Courier New', monospace;
   }
 
+  /* 修复右下角机器人按钮 */
+  #help-bot-icon {
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    width: 60px;
+    height: 60px;
+    background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 28px;
+    cursor: pointer;
+    box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
+    z-index: 999;
+    transition: all 0.3s ease;
+    border: 2px solid rgba(255, 255, 255, 0.2);
+  }
+  
 .maze .cell {
   position: relative;
 }
