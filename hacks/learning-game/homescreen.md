@@ -1273,75 +1273,67 @@ permalink: /learninggame/home
   }
 
   function renderRobotSim() {
-    const level = robotLevels[currentSectorNum];
-    mContent.innerHTML = `
-      <div class="robot-sim-container">
-        <p style="color: #e2e8f0; margin-bottom: 10px; font-size: 14px;">Program the robot. Reach ⭐. Avoid 🟥.</p>
-        <div class="robot-grid" id="rg"></div>
-        <textarea id="rcInput">robot.MoveForward();</textarea>
-        <button class="btn btn-check" id="runSimBtn">Execute Command</button>
+  const level = robotLevels[currentSectorNum];
+  mContent.innerHTML = `
+    <div class="robot-sim-container">
+      <p style="color: #e2e8f0; margin-bottom: 10px; font-size: 14px;">Program the robot. Reach ⭐. Avoid 🟥.</p>
+      <div class="robot-grid" id="rg"></div>
+      <textarea id="rcInput">robot.MoveForward();</textarea>
+      <div style="display: flex; gap: 10px; margin-top: 10px;">
+        <button class="btn btn-check" id="runSimBtn" style="flex: 2;">Execute Command</button>
+        <button class="btn" id="aiFillBtn" style="flex: 1; background: #8b5cf6; color: white;">🤖 AI Fill</button>
       </div>
-    `;
-    document.getElementById('runSimBtn').onclick = runRobotSim;
-    updateRobotGrid(level.start, 0);
-  }
+    </div>
+  `;
+  document.getElementById('runSimBtn').onclick = runRobotSim;
+  document.getElementById('aiFillBtn').onclick = aiFillAnswer;
+  updateRobotGrid(level.start, 0);
+}
 
-  async function runRobotSim() {
-    moduleAttempts[0]++;
-    const code = document.getElementById('rcInput').value;
+async function aiFillAnswer() {
+  try {
+    feedback.textContent = '🤔 Asking AI for solution...';
+    feedback.style.color = '#8b5cf6';
+    
     const level = robotLevels[currentSectorNum];
-    let rPos = [...level.start];
-    let dir = 0;
-
-    updateRobotGrid(rPos, dir);
-    const commands = [];
-    const robot = {
-      MoveForward: (n=1) => { for (let i=0; i<n; i++) commands.push('MOVE'); },
-      TurnRight: () => commands.push('RIGHT'),
-      TurnLeft: () => commands.push('LEFT')
-    };
-
-    try {
-      eval(code);
-      for (const cmd of commands) {
-        await new Promise(r => setTimeout(r, 350));
-        if (cmd === 'MOVE') {
-          if (dir === 0) rPos[0]++;
-          else if (dir === 1) rPos[1]++;
-          else if (dir === 2) rPos[0]--;
-          else rPos[1]--;
-        } else if (cmd === 'RIGHT') dir = (dir + 1) % 4;
-        else if (cmd === 'LEFT') dir = (dir + 3) % 4;
-
-        updateRobotGrid(rPos, dir);
-
-        if (
-          rPos[0] < 0 || rPos[0] > 4 || rPos[1] < 0 || rPos[1] > 4 ||
-          level.walls.some(w => w[0] === rPos[0] && w[1] === rPos[1])
-        ) {
-          feedback.textContent = "💥 Crash! Resetting...";
-          feedback.style.color = "#ef4444";
-          setTimeout(() => updateRobotGrid(level.start, 0), 900);
-          return;
+    const prompt = `Give me the exact robot code to get from [${level.start}] to [${level.goal}] avoiding walls at ${JSON.stringify(level.walls)}. Return ONLY the code, no explanations.`;
+    
+    const data = await fetchJSON(`${API_URL}/ai_chat`, {
+      method: "POST",
+      body: JSON.stringify({
+        sector_id: currentSectorNum,
+        question_num: currentQuestion,
+        user_message: prompt,
+        conversation_history: [],
+        question_details: {
+          type: "robot_simulation",
+          start_pos: level.start,
+          goal_pos: level.goal,
+          walls: level.walls
         }
+      })
+    }, true);
+    
+    if (data.success && data.ai_response) {
+      // 提取代码部分（移除可能的解释文字）
+      let code = data.ai_response;
+      // 如果返回包含代码块，提取出来
+      const codeMatch = code.match(/```(?:\w+)?\n([\s\S]*?)```/);
+      if (codeMatch) {
+        code = codeMatch[1].trim();
       }
-
-      if (rPos[0] === level.goal[0] && rPos[1] === level.goal[1]) {
-        feedback.style.color = "#10b981";
-        feedback.textContent = "✅ Goal reached!";
-        nextBtn.disabled = false;
-        nextBtn.style.opacity = "1";
-        awardBadge(currentSectorNum, 0);
-      } else {
-        feedback.style.color = "#fbbf24";
-        feedback.textContent = "⚠️ Short of target. Try again.";
-        updateRobotGrid(level.start,0);
-      }
-    } catch (e) {
-      feedback.style.color = "#ef4444";
-      feedback.textContent = "❌ Syntax Error.";
+      document.getElementById('rcInput').value = code;
+      feedback.textContent = '✅ Answer filled by AI! Click Execute to run.';
+      feedback.style.color = '#10b981';
+    } else {
+      throw new Error('Failed to get AI response');
     }
+  } catch (error) {
+    console.error('AI Fill error:', error);
+    feedback.textContent = '❌ Failed to get AI answer';
+    feedback.style.color = '#ef4444';
   }
+}
 
   function updateRobotGrid(pos, dir) {
     const grid = document.getElementById('rg');
